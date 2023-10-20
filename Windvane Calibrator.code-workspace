@@ -1,0 +1,117 @@
+{
+	"folders": [
+		{
+			"name": "ESP32 Proteus Simulation",
+			"path": "../ESP32 Proteus Simulation"
+		},
+		{
+			"name": "D1 Mini PWM",
+			"path": "../D1 Mini PWM"
+		},
+		{
+			"name": "ESP32-S3_Display",
+			"path": "../ESP32-S3_Display"
+		},
+		{
+			"name": "230918-115440-adafruit_feather_esp32s3_tft",
+			"path": "../230918-115440-adafruit_feather_esp32s3_tft"
+		},
+		{
+			"name": "230918-120208-dfrobot_romeo_esp32s3",
+			"path": "../230918-120208-dfrobot_romeo_esp32s3"
+		},
+		{
+			"name": "Power supply power monitor - esp8266",
+			"path": "../Power supply power monitor - esp8266"
+		},
+		{
+			"name": "ESP32 Dev kit test",
+			"path": "../ESP32 Dev kit test"
+		},
+		{
+			"name": "MCU PSU Manager",
+			"path": "../MCU PSU Manager"
+		},
+		{
+			"name": "Wind Meter - ESP8266",
+			"path": "../Wind Meter - ESP8266"
+		},
+		{
+			"name": "Windvane Calibrator",
+			"path": "."
+		},
+		{
+			"name": "Oil Changer",
+			"path": "../Oil Changer"
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"system_error": "cpp",
+			"array": "cpp",
+			"deque": "cpp",
+			"list": "cpp",
+			"string": "cpp",
+			"unordered_map": "cpp",
+			"vector": "cpp",
+			"string_view": "cpp",
+			"initializer_list": "cpp",
+			"ranges": "cpp",
+			"queue": "cpp",
+			"stack": "cpp",
+			"random": "cpp",
+			"unordered_set": "cpp",
+			"optional": "cpp",
+			"istream": "cpp",
+			"ostream": "cpp",
+			"ratio": "cpp",
+			"functional": "cpp",
+			"tuple": "cpp",
+			"type_traits": "cpp",
+			"utility": "cpp",
+			"variant": "cpp",
+			"*.tcc": "cpp",
+			"atomic": "cpp",
+			"cctype": "cpp",
+			"chrono": "cpp",
+			"clocale": "cpp",
+			"cmath": "cpp",
+			"cstdarg": "cpp",
+			"cstddef": "cpp",
+			"cstdint": "cpp",
+			"cstdio": "cpp",
+			"cstdlib": "cpp",
+			"cstring": "cpp",
+			"ctime": "cpp",
+			"cwchar": "cpp",
+			"cwctype": "cpp",
+			"exception": "cpp",
+			"algorithm": "cpp",
+			"iterator": "cpp",
+			"map": "cpp",
+			"memory": "cpp",
+			"memory_resource": "cpp",
+			"numeric": "cpp",
+			"set": "cpp",
+			"fstream": "cpp",
+			"iomanip": "cpp",
+			"iosfwd": "cpp",
+			"limits": "cpp",
+			"new": "cpp",
+			"sstream": "cpp",
+			"stdexcept": "cpp",
+			"streambuf": "cpp",
+			"cinttypes": "cpp",
+			"typeinfo": "cpp",
+			"bit": "cpp",
+			"compare": "cpp",
+			"concepts": "cpp",
+			"netfwd": "cpp",
+			"bitset": "cpp",
+			"regex": "cpp",
+			"any": "cpp"
+		},
+		"idf.gitPathWin": "C:\\Espressif\\tools\\idf-git\\2.39.2\\cmd\\git.exe",
+		"liveServer.settings.multiRootWorkspaceName": "MCU PSU Manager"
+	}
+}
