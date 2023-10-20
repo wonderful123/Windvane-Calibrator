@@ -16,9 +16,9 @@ extern const String js_websocket;
 extern const String js_chart;
 extern const String html_body;
 
-
 const char* ssid = "GretaThurnberg";
 const char* password = "trump2020";
+
 const int windVanePin = 34;
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
