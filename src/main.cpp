@@ -4,6 +4,8 @@
 #include <ESPAsyncWebServer.h>
 #include <AsyncWebSocket.h>
 #include <numeric>
+#include <vector>
+#include <cmath>
 
 void setupWiFi();
 void setupWebServer();
@@ -60,13 +62,20 @@ void setupWiFi() {
 
 void collectAdcData() {
   int adcValue = analogRead(windVanePin);
-  
+
   // Add the new reading to the buffer and remove the oldest if buffer is full
   adcBuffer.push_back(adcValue);
   if (adcBuffer.size() > adcBufferSize) {
     adcBuffer.erase(adcBuffer.begin());
   }
-  
+
+  // If we don't yet have enough samples, just report the value
+  if (adcBuffer.size() < adcBufferSize) {
+    String msg = "ADC Value:" + String(adcValue);
+    ws.textAll(msg);
+    return;
+  }
+
   // Calculate the standard deviation of the readings in the buffer
   float currentStdDev = calculateStdDev(adcBuffer);
 
@@ -105,8 +114,10 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
   } else if(type == WS_EVT_DISCONNECT){
     // ... (Previous disconnect logic)
   } else if(type == WS_EVT_DATA){
-    if (strcmp((char*)data, "start") == 0) {
+    if (strncmp((char*)data, "start", len) == 0 && len == 5) {
       isSpinning = true;
+      adcBuffer.clear();
+      adcValues.clear();
       ws.textAll("Start spinning the vane clockwise...");
     }
   }
