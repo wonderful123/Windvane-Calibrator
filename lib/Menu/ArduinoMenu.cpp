@@ -2,6 +2,15 @@
 
 #ifdef ARDUINO
 #include <Arduino.h>
+#else
+#include <chrono>
+#include <iostream>
+using std::cout; using std::endl;
+static unsigned long millis() {
+    using namespace std::chrono;
+    static auto start = steady_clock::now();
+    return duration_cast<milliseconds>(steady_clock::now() - start).count();
+}
 #endif
 
 ArduinoMenu::ArduinoMenu(WindVane* vane, IIOHandler* io, IDiagnostics* diag)
@@ -43,7 +52,6 @@ void ArduinoMenu::update() {
 void ArduinoMenu::showStatusLine() {
     float dir = _vane->direction();
     unsigned long ago = (millis() - _lastCalibration)/60000UL;
-#ifdef ARDUINO
     const char* statusStr = "Unknown";
     switch (_vane->calibrationStatus()) {
         case CalibrationManager::CalibrationStatus::NotStarted: statusStr = "Uncal"; break;
@@ -51,6 +59,7 @@ void ArduinoMenu::showStatusLine() {
         case CalibrationManager::CalibrationStatus::InProgress: statusStr = "Calibrating"; break;
         case CalibrationManager::CalibrationStatus::Completed: statusStr = "OK"; break;
     }
+#ifdef ARDUINO
     Serial.print("\rDir: ");
     Serial.print(dir,1);
     Serial.print("\xC2\xB0 Status: ");
@@ -58,6 +67,9 @@ void ArduinoMenu::showStatusLine() {
     Serial.print(" Cal: ");
     Serial.print(ago);
     Serial.print("m    \r");
+#else
+    cout << "\rDir: " << dir << "\xC2\xB0 Status: " << statusStr
+         << " Cal: " << ago << "m    \r" << std::flush;
 #endif
 }
 
@@ -70,7 +82,14 @@ void ArduinoMenu::showMainMenu() {
     Serial.println("[G] Diagnostics" );
     Serial.println("[S] Settings" );
     Serial.println("[H] Help" );
-    Serial.println("Choose option: " );
+#else
+    cout << "\n=== Wind Vane Menu ===" << endl;
+    cout << "[D] Display direction" << endl;
+    cout << "[C] Calibrate" << endl;
+    cout << "[G] Diagnostics" << endl;
+    cout << "[S] Settings" << endl;
+    cout << "[H] Help" << endl;
+    cout << "Choose option: " << endl;
 #endif
 }
 
@@ -78,7 +97,11 @@ void ArduinoMenu::handleMainInput(char c) {
     switch(c) {
         case 'D': case 'd':
             _state = State::LiveDisplay;
+#ifdef ARDUINO
             Serial.println("Live direction - press Q to quit");
+#else
+            cout << "Live direction - press Q to quit" << endl;
+#endif
             break;
         case 'C': case 'c':
             _state = State::Calibrate;
