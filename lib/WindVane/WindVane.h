@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Calibration/Calibrator.h"
-#include "HardwareInterface/IADC.h"
+#include "IADC.h"
 #include "Calibration/CalibrationManager.h"
 
 /**

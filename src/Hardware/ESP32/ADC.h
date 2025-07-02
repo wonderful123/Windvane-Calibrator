@@ -1,6 +1,6 @@
 #pragma once
 
-#include "WindVane/IADC.h"
+#include "../../lib/WindVane/IADC.h"
 
 class ESP32ADC : public IADC {
 public:
