@@ -2,6 +2,7 @@
 #include "Calibration/Strategies/ICalibrationStrategy.h"
 #include "../IO/IIOHandler.h"
 #include "../Diagnostics/IDiagnostics.h"
+#include <memory>
 
 class CalibrationManager {
 public:
@@ -12,20 +13,17 @@ public:
     Completed
   };
 
-  CalibrationManager(ICalibrationStrategy *strategy, IIOHandler *io,
-                     IDiagnostics *diag);
+  CalibrationManager(std::unique_ptr<ICalibrationStrategy> strategy,
+                     IIOHandler *io, IDiagnostics *diag);
 
-  // Starts the calibration process and sets status to AwaitingStart
-  bool startCalibration();
-
-  // Begins the actual calibration based on a received signal
+  // Prepares the device for calibration and waits for user confirmation
   bool beginCalibration();
 
-  // Ends the calibration and sets status to Completed
-  bool endCalibration();
+  // Runs the full calibration process in a single step
+  bool runCalibration();
 
-  // Gets the current calibration data
-  void getCalibratedData(float rawWindDirection);
+  // Converts a raw wind reading to calibrated degrees
+  float getCalibratedData(float rawWindDirection) const;
 
   // Allows editing the calibration data at certain points
   void editCalibrationData(/*data*/);
@@ -34,7 +32,7 @@ public:
   CalibrationStatus getStatus() const;
 
 private:
-  ICalibrationStrategy *calibrationStrategy;
+  std::unique_ptr<ICalibrationStrategy> calibrationStrategy;
   CalibrationStatus status;
   IIOHandler *_io;
   IDiagnostics *_diag;

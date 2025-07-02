@@ -15,7 +15,7 @@ WindVane windVane(&adc, WindVaneType::REED_SWITCH, CalibrationMethod::SPINNING,
 
 void setup() {
   Serial.begin(115200);
-  windVane.startCalibration();
+  windVane.runCalibration();
 }
 
 void loop() {}

@@ -1,11 +1,13 @@
 #pragma once
 
-#include "Calibration/Calibrator.h"
+#include "Calibration/CalibrationMethod.h"
 #include "IADC.h"
 #include "Calibration/CalibrationManager.h"
+#include "Calibration/StrategyFactory.h"
 #include "Storage/ICalibrationStorage.h"
 #include "IO/IIOHandler.h"
 #include "Diagnostics/IDiagnostics.h"
+#include <memory>
 
 /**
  * @enum WindVaneType
@@ -44,7 +46,8 @@ public:
    * to an IADC object, which is determined by the HARDWARE parameter.
    */
   WindVane(IADC *adc, WindVaneType type, CalibrationMethod method,
-           ICalibrationStorage *storage, IIOHandler *io, IDiagnostics *diag);
+           ICalibrationStorage *storage, IIOHandler *io, IDiagnostics *diag,
+           const SpinningConfig &config = {});
 
   /**
    * @brief Gets the calibrated wind direction.
@@ -54,14 +57,12 @@ public:
   float direction();
 
   /**
-   * @brief Initiates the calibration process.
+   * @brief Runs the interactive calibration routine.
    *
-   * Starts the calibration process using the selected calibration method.
+   * This method performs the complete calibration workflow and blocks until
+   * finished.
    */
-  void calibrate();
-
-  void startCalibration();
-  void stopCalibration();
+  void runCalibration();
 
 private:
   /**
@@ -73,8 +74,7 @@ private:
 
   /// Pointer to the ADC interface.
   IADC *_adc;
-  Calibrator *_calibrator;
   WindVaneType _type;
-  CalibrationManager *_calibrationManager;
+  std::unique_ptr<CalibrationManager> _calibrationManager;
   ICalibrationStorage *_storage;
 };

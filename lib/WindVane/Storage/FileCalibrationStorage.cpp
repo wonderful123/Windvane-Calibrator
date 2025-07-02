@@ -18,3 +18,18 @@ void FileCalibrationStorage::save(const std::vector<ClusterData>& clusters, int 
         ofs << c.mean << " " << c.min << " " << c.max << " " << c.count << "\n";
     }
 }
+
+bool FileCalibrationStorage::load(std::vector<ClusterData>& clusters, int &version) {
+    std::ifstream ifs(_path);
+    if (!ifs)
+        return false;
+    clusters.clear();
+    std::time_t ts;
+    if (!(ifs >> version >> ts))
+        return false;
+    ClusterData c{};
+    while (ifs >> c.mean >> c.min >> c.max >> c.count) {
+        clusters.push_back(c);
+    }
+    return true;
+}

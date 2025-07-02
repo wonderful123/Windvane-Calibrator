@@ -13,8 +13,16 @@ using namespace std::chrono_literals;
 
 
 SpinningMethod::SpinningMethod(IADC *adc, ICalibrationStorage *storage,
-                               IIOHandler *io, IDiagnostics *diag)
-    : _adc(adc), _storage(storage), _io(io), _diag(diag) {}
+                               IIOHandler *io, IDiagnostics *diag,
+                               SpinningConfig config)
+    : _adc(adc), _storage(storage), _io(io), _diag(diag), _config(config) {
+  if (_storage) {
+    int version = 0;
+    std::vector<ClusterData> clusters;
+    if (_storage->load(clusters, version))
+      _clusterMgr.setClusters(clusters);
+  }
+}
 
 
 
@@ -29,10 +37,10 @@ void SpinningMethod::calibrate() {
     _io->waitMs(10);
   _io->flushInput();
 
-  const float threshold = 0.05f;
-  const int bufferSize = 5;
-  const int expectedPositions = 16;
-  const std::chrono::milliseconds sampleDelay(10);
+  const float threshold = _config.threshold;
+  const int bufferSize = _config.bufferSize;
+  const int expectedPositions = _config.expectedPositions;
+  const std::chrono::milliseconds sampleDelay(_config.sampleDelayMs);
 
   _clusterMgr.clear();
   _recent.clear();
@@ -41,7 +49,7 @@ void SpinningMethod::calibrate() {
   bool abort = false;
   float prevReading = -1.0f;
   auto lastIncrease = std::chrono::steady_clock::now();
-  const std::chrono::seconds stallTimeout(5);
+  const std::chrono::seconds stallTimeout(_config.stallTimeoutSec);
 
   while (!stop) {
     float reading = _adc->read();
@@ -118,4 +126,8 @@ void SpinningMethod::calibrate() {
   } else {
     _diag->info("Calibration aborted. Previous data preserved.");
   }
+}
+
+float SpinningMethod::mapReading(float reading) const {
+  return _clusterMgr.interpolate(reading);
 }

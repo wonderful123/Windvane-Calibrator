@@ -8,6 +8,7 @@ class EEPROMCalibrationStorage : public ICalibrationStorage {
 public:
     EEPROMCalibrationStorage(size_t startAddress = 0);
     void save(const std::vector<ClusterData>& clusters, int version) override;
+    bool load(std::vector<ClusterData>& clusters, int &version) override;
 
 private:
     size_t _startAddress;
