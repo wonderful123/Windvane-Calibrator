@@ -1,4 +1,4 @@
-# ESP32 Wind Vane Calibration Project
+#ESP32 Wind Vane Calibration Project
 
 ## Overview
 
@@ -29,11 +29,12 @@ This project aims to provide a robust and flexible calibration mechanism for win
 
 ## Usage
 
-Upload the code to your Arduino board and follow the on-screen prompts to perform calibration.
-Upon startup the firmware guides you through a spinning calibration process.
-Simply align the vane to your forward reference and rotate it slowly.
-Each stable position is detected automatically and progress is printed to the
-serial console until a full rotation is captured.
+Upload the code to your Arduino board and open the serial monitor. After
+aligning the vane to your forward reference press any key to begin
+calibration. Slowly rotate the vane; each stable position is detected and
+reported along with a certainty percentage that increases as additional
+rotations reveal no new positions. When you are happy with the certainty press
+`s` to stop the calibration and store the data.
 
 ---
 
