@@ -39,8 +39,9 @@ float CalibrationManager::getCalibratedData(float rawWindDirection) const {
 }
 
 void CalibrationManager::editCalibrationData(/*data*/) {
-  // Logic to edit calibration data
-  // This could call methods on the calibrationStrategy to update its internal data
+  if (_io && _io->yesNoPrompt("Recalibrate now? (Y/N)")) {
+    beginCalibration();
+  }
 }
 
 CalibrationManager::CalibrationStatus CalibrationManager::getStatus() const {
