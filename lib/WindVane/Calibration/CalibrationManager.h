@@ -25,8 +25,8 @@ public:
   // Ends the calibration and sets status to Completed
   bool endCalibration();
 
-  // Gets the current calibration data
-  void getCalibratedData(float rawWindDirection);
+  // Converts a raw wind reading to calibrated degrees
+  float getCalibratedData(float rawWindDirection) const;
 
   // Allows editing the calibration data at certain points
   void editCalibrationData(/*data*/);

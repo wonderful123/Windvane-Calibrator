@@ -14,7 +14,14 @@ using namespace std::chrono_literals;
 
 SpinningMethod::SpinningMethod(IADC *adc, ICalibrationStorage *storage,
                                IIOHandler *io, IDiagnostics *diag)
-    : _adc(adc), _storage(storage), _io(io), _diag(diag) {}
+    : _adc(adc), _storage(storage), _io(io), _diag(diag) {
+  if (_storage) {
+    int version = 0;
+    std::vector<ClusterData> clusters;
+    if (_storage->load(clusters, version))
+      _clusterMgr.setClusters(clusters);
+  }
+}
 
 
 
@@ -118,4 +125,8 @@ void SpinningMethod::calibrate() {
   } else {
     _diag->info("Calibration aborted. Previous data preserved.");
   }
+}
+
+float SpinningMethod::mapReading(float reading) const {
+  return _clusterMgr.interpolate(reading);
 }

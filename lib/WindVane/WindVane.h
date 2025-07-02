@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Calibration/Calibrator.h"
+#include "Calibration/CalibrationMethod.h"
 #include "IADC.h"
 #include "Calibration/CalibrationManager.h"
 #include "Calibration/StrategyFactory.h"
@@ -60,8 +60,6 @@ public:
    *
    * Starts the calibration process using the selected calibration method.
    */
-  void calibrate();
-
   void startCalibration();
   void stopCalibration();
 
@@ -75,7 +73,6 @@ private:
 
   /// Pointer to the ADC interface.
   IADC *_adc;
-  Calibrator *_calibrator;
   WindVaneType _type;
   std::unique_ptr<CalibrationManager> _calibrationManager;
   ICalibrationStorage *_storage;

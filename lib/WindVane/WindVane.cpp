@@ -13,6 +13,16 @@ WindVane::WindVane(IADC *adc, WindVaneType type,
     _calibrationManager = std::make_unique<CalibrationManager>(std::move(strategy), io, diag);
 }
 
+float WindVane::direction() {
+    float raw = getRawDirection();
+    return _calibrationManager ? _calibrationManager->getCalibratedData(raw)
+                               : raw * 360.0f;
+}
+
+float WindVane::getRawDirection() {
+    return _adc ? _adc->read() : 0.0f;
+}
+
 void WindVane::startCalibration() {
     _calibrationManager->startCalibration();
     _calibrationManager->beginCalibration();

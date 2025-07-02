@@ -75,3 +75,40 @@ void ClusterManager::diagnostics(IDiagnostics &diag) const {
     }
 }
 
+void ClusterManager::setClusters(const std::vector<ClusterData>& clusters) {
+    _clusters = clusters;
+    std::sort(_clusters.begin(), _clusters.end(),
+              [](const ClusterData& a, const ClusterData& b){ return a.mean < b.mean; });
+}
+
+float ClusterManager::interpolate(float reading) const {
+    if (_clusters.empty())
+        return reading * 360.0f;
+
+    size_t n = _clusters.size();
+    // handle wrap-around before first cluster
+    if (reading < _clusters.front().mean) {
+        float prev = _clusters.back().mean - 1.0f;
+        float ratio = (reading - prev) / (_clusters.front().mean - prev);
+        float angle = (n - 1 + ratio) * 360.0f / n;
+        if (angle >= 360.0f) angle -= 360.0f;
+        return angle;
+    }
+    for (size_t i = 0; i < n; ++i) {
+        const float curr = _clusters[i].mean;
+        const float next = (i + 1 < n) ? _clusters[i + 1].mean : _clusters[0].mean + 1.0f;
+        if (reading >= curr && reading < next) {
+            float ratio = (reading - curr) / (next - curr);
+            float angle = (i + ratio) * 360.0f / n;
+            if (angle >= 360.0f) angle -= 360.0f;
+            return angle;
+        }
+    }
+    // if reading >= last cluster mean
+    float ratio = (reading - _clusters.back().mean) /
+                  (_clusters.front().mean + 1.0f - _clusters.back().mean);
+    float angle = (n - 1 + ratio) * 360.0f / n;
+    if (angle >= 360.0f) angle -= 360.0f;
+    return angle;
+}
+

@@ -21,6 +21,9 @@ public:
   // Runs the interactive calibration procedure.
   void calibrate() override;
 
+  // Map a raw ADC reading to a calibrated direction in degrees
+  float mapReading(float reading) const override;
+
   static constexpr int CALIBRATION_VERSION = 1;
 
 private:

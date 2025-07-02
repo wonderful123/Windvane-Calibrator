@@ -43,8 +43,10 @@ bool CalibrationManager::endCalibration() {
   return true;
 }
 
-void CalibrationManager::getCalibratedData(float rawWindDirection) {
-  // Retrieve the calibrated data
+float CalibrationManager::getCalibratedData(float rawWindDirection) const {
+  if (calibrationStrategy)
+    return calibrationStrategy->mapReading(rawWindDirection);
+  return rawWindDirection * 360.0f;
 }
 
 void CalibrationManager::editCalibrationData(/*data*/) {

@@ -1,5 +1,5 @@
 #pragma once
-#include "Calibrator.h"
+#include "CalibrationMethod.h"
 #include "Strategies/ICalibrationStrategy.h"
 #include "../IADC.h"
 #include "../Storage/ICalibrationStorage.h"
