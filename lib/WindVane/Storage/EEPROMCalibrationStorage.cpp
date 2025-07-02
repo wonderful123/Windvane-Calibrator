@@ -9,10 +9,15 @@ EEPROMCalibrationStorage::EEPROMCalibrationStorage(size_t startAddress)
 void EEPROMCalibrationStorage::save(const std::vector<ClusterData>& clusters, int version) {
 #ifdef ARDUINO
     size_t addr = _startAddress;
-    EEPROM.begin(clusters.size() * sizeof(float));
+    EEPROM.begin(512);
+    EEPROM.put(addr, version); addr += sizeof(int);
+    uint32_t timestamp = millis();
+    _lastTimestamp = timestamp;
+    EEPROM.put(addr, timestamp); addr += sizeof(uint32_t);
+    uint16_t count = static_cast<uint16_t>(clusters.size());
+    EEPROM.put(addr, count); addr += sizeof(uint16_t);
     for (const auto& c : clusters) {
-        EEPROM.put(addr, c.mean);
-        addr += sizeof(float);
+        EEPROM.put(addr, c); addr += sizeof(ClusterData);
     }
     EEPROM.commit();
 #else
@@ -23,13 +28,26 @@ void EEPROMCalibrationStorage::save(const std::vector<ClusterData>& clusters, in
 
 bool EEPROMCalibrationStorage::load(std::vector<ClusterData>& clusters, int &version) {
 #ifdef ARDUINO
-    (void)version;
-    clusters.clear();
     size_t addr = _startAddress;
     EEPROM.begin(512);
-    // Implementation omitted for brevity
+    EEPROM.get(addr, version); addr += sizeof(int);
+    uint32_t timestamp = 0;
+    EEPROM.get(addr, timestamp); addr += sizeof(uint32_t);
+    _lastTimestamp = timestamp;
+    uint16_t count = 0;
+    EEPROM.get(addr, count); addr += sizeof(uint16_t);
+    if (count == 0 || count > 64) {
+        EEPROM.end();
+        return false;
+    }
+    clusters.clear();
+    for (uint16_t i = 0; i < count; ++i) {
+        ClusterData c{};
+        EEPROM.get(addr, c); addr += sizeof(ClusterData);
+        clusters.push_back(c);
+    }
     EEPROM.end();
-    return false;
+    return true;
 #else
     (void)clusters;
     (void)version;

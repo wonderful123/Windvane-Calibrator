@@ -28,3 +28,12 @@ void WindVane::runCalibration() {
     if (_calibrationManager)
         _calibrationManager->runCalibration();
 }
+
+CalibrationManager::CalibrationStatus WindVane::calibrationStatus() const {
+    return _calibrationManager ? _calibrationManager->getStatus()
+                               : CalibrationManager::CalibrationStatus::NotStarted;
+}
+
+uint32_t WindVane::lastCalibrationTimestamp() const {
+    return _storage ? _storage->lastTimestamp() : 0;
+}

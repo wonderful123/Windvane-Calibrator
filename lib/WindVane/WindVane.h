@@ -64,6 +64,12 @@ public:
    */
   void runCalibration();
 
+  /// Returns the calibration timestamp stored in the storage
+  uint32_t lastCalibrationTimestamp() const;
+
+  /// Returns the current calibration status
+  CalibrationManager::CalibrationStatus calibrationStatus() const;
+
 private:
   /**
    * @brief Gets the raw wind direction from the ADC interface.
