@@ -1,5 +1,7 @@
 #pragma once
 #include "Calibration/Strategies/ICalibrationStrategy.h"
+#include "../IO/IIOHandler.h"
+#include "../Diagnostics/IDiagnostics.h"
 
 class CalibrationManager {
 public:
@@ -10,16 +12,17 @@ public:
     Completed
   };
 
-  CalibrationManager(ICalibrationStrategy *strategy);
+  CalibrationManager(ICalibrationStrategy *strategy, IIOHandler *io,
+                     IDiagnostics *diag);
 
   // Starts the calibration process and sets status to AwaitingStart
-  void startCalibration();
+  bool startCalibration();
 
   // Begins the actual calibration based on a received signal
-  void beginCalibration();
+  bool beginCalibration();
 
   // Ends the calibration and sets status to Completed
-  void endCalibration();
+  bool endCalibration();
 
   // Gets the current calibration data
   void getCalibratedData(float rawWindDirection);
@@ -33,4 +36,6 @@ public:
 private:
   ICalibrationStrategy *calibrationStrategy;
   CalibrationStatus status;
+  IIOHandler *_io;
+  IDiagnostics *_diag;
 };
