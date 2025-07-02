@@ -3,6 +3,8 @@
 #include <deque>
 #include <vector>
 #include <cstdint>
+#include "../ClusterData.h"
+#include "../../Storage/ICalibrationStorage.h"
 
 class IADC;
 
@@ -10,7 +12,7 @@ class IADC;
 // while the user rotates the vane.
 class SpinningMethod : public ICalibrationStrategy {
 public:
-  explicit SpinningMethod(IADC *adc);
+  SpinningMethod(IADC *adc, ICalibrationStorage *storage);
 
   // Runs the interactive calibration procedure.
   void calibrate() override;
@@ -31,16 +33,10 @@ private:
 #endif
   };
 
-  struct PositionCluster {
-    float mean;
-    float min;
-    float max;
-    int count;
-  };
-
   IADC *_adc;
+  ICalibrationStorage *_storage;
   IOHandler _io;
-  std::vector<PositionCluster> _clusters;
+  std::vector<ClusterData> _clusters;
   std::deque<float> _recent;
   int _anomalyCount{0};
 

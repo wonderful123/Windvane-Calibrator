@@ -1,5 +1,6 @@
 #include "Calibration/Strategies/SpinningMethod.h"
 #include "../../IADC.h"
+#include "../../Storage/ICalibrationStorage.h"
 
 #ifdef ARDUINO
 #include <Arduino.h>
@@ -7,12 +8,9 @@
 #else
 #include <chrono>
 #include <cmath>
-#include <fstream>
 #include <algorithm>
-#include <filesystem>
 #include <iostream>
 #include <thread>
-#include <ctime>
 #endif
 
 using namespace std::chrono_literals;
@@ -68,7 +66,8 @@ bool SpinningMethod::IOHandler::yesNoPrompt(const char *prompt) const {
 }
 #endif
 
-SpinningMethod::SpinningMethod(IADC *adc) : _adc(adc) {}
+SpinningMethod::SpinningMethod(IADC *adc, ICalibrationStorage *storage)
+    : _adc(adc), _storage(storage) {}
 
 
 bool SpinningMethod::addOrUpdateCluster(float reading, float threshold) {
@@ -89,13 +88,13 @@ void SpinningMethod::mergeAndPruneClusters(float mergeThreshold, int minCount) {
   if (_clusters.empty())
     return;
   std::sort(_clusters.begin(), _clusters.end(),
-            [](const PositionCluster &a, const PositionCluster &b) {
+            [](const ClusterData &a, const ClusterData &b) {
               return a.mean < b.mean;
             });
-  std::vector<PositionCluster> merged;
+  std::vector<ClusterData> merged;
   size_t i = 0;
   while (i < _clusters.size()) {
-    PositionCluster cluster = _clusters[i];
+    ClusterData cluster = _clusters[i];
     size_t j = i + 1;
     while (j < _clusters.size() &&
            std::fabs(_clusters[j].mean - cluster.mean) < mergeThreshold) {
@@ -116,25 +115,8 @@ void SpinningMethod::mergeAndPruneClusters(float mergeThreshold, int minCount) {
 }
 
 void SpinningMethod::saveCalibration() const {
-#ifdef ARDUINO
-  EEPROM.begin(_clusters.size() * sizeof(float));
-  for (size_t i = 0; i < _clusters.size(); ++i) {
-    EEPROM.put(i * sizeof(float), _clusters[i].mean);
-  }
-  EEPROM.commit();
-#else
-  namespace fs = std::filesystem;
-  if (fs::exists("calibration.dat")) {
-    fs::rename("calibration.dat", "calibration.dat.bak");
-    std::cout << "Previous calibration backed up to calibration.dat.bak" << std::endl;
-  }
-  std::ofstream ofs("calibration.dat");
-  ofs << CALIBRATION_VERSION << " " << std::time(nullptr) << "\n";
-  for (size_t i = 0; i < _clusters.size(); ++i) {
-    ofs << _clusters[i].mean << " " << _clusters[i].min << " " << _clusters[i].max
-        << " " << _clusters[i].count << "\n";
-  }
-#endif
+  if (_storage)
+    _storage->save(_clusters, CALIBRATION_VERSION);
 }
 
 void SpinningMethod::calibrate() {
