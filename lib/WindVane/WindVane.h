@@ -7,6 +7,7 @@
 #include "IO/IIOHandler.h"
 #include "Diagnostics/IDiagnostics.h"
 
+
 /**
  * @enum WindVaneType
  * @brief Enumeration for different types of wind vanes.

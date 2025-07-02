@@ -29,6 +29,24 @@ private:
   IIOHandler *_io;
   IDiagnostics *_diag;
   ClusterManager _clusterMgr;
+
+  class IOHandler {
+  public:
+    bool hasInput() const;
+    char readInput() const;
+    void flushInput() const;
+    void waitMs(int ms) const;
+#ifdef ARDUINO
+    bool yesNoPrompt(const __FlashStringHelper *prompt) const;
+#else
+    bool yesNoPrompt(const char *prompt) const;
+#endif
+  };
+
+  IADC *_adc;
+  ICalibrationStorage *_storage;
+  IOHandler _io;
+  std::vector<ClusterData> _clusters;
   std::deque<float> _recent;
 
   void saveCalibration() const;

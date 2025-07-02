@@ -12,15 +12,107 @@
 using namespace std::chrono_literals;
 
 
+#ifdef ARDUINO
+#include <Arduino.h>
+#include <EEPROM.h>
+#else
+#include <chrono>
+#include <cmath>
+#include <algorithm>
+#include <iostream>
+#include <thread>
+#endif
+
+using namespace std::chrono_literals;
+
+bool SpinningMethod::IOHandler::hasInput() const {
+#ifdef ARDUINO
+  return Serial.available();
+#else
+  return std::cin.rdbuf()->in_avail();
+#endif
+}
+
+char SpinningMethod::IOHandler::readInput() const {
+#ifdef ARDUINO
+  return Serial.read();
+#else
+  char c;
+  std::cin.get(c);
+  return c;
+#endif
+}
+
+void SpinningMethod::IOHandler::flushInput() const {
+#ifdef ARDUINO
+  while (Serial.available())
+    Serial.read();
+#endif
+}
+
+void SpinningMethod::IOHandler::waitMs(int ms) const {
+#ifdef ARDUINO
+  delay(ms);
+#else
+  std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+#endif
+}
+
+#ifdef ARDUINO
+bool SpinningMethod::IOHandler::yesNoPrompt(const __FlashStringHelper *prompt) const {
+  Serial.println(prompt);
+  while (!Serial.available())
+    delay(10);
+  char c = Serial.read();
+  flushInput();
+  return c == 'y' || c == 'Y';
+}
+#else
+bool SpinningMethod::IOHandler::yesNoPrompt(const char *prompt) const {
+  std::cout << prompt << std::endl;
+  char c;
+  std::cin >> c;
+  return c == 'y' || c == 'Y';
+}
+#endif
+
 SpinningMethod::SpinningMethod(IADC *adc, ICalibrationStorage *storage,
                                IIOHandler *io, IDiagnostics *diag)
     : _adc(adc), _storage(storage), _io(io), _diag(diag) {}
 
-
+void SpinningMethod::mergeAndPruneClusters(float mergeThreshold, int minCount) {
+  if (_clusters.empty())
+    return;
+  std::sort(_clusters.begin(), _clusters.end(),
+            [](const ClusterData &a, const ClusterData &b) {
+              return a.mean < b.mean;
+            });
+  std::vector<ClusterData> merged;
+  size_t i = 0;
+  while (i < _clusters.size()) {
+    ClusterData cluster = _clusters[i];
+    size_t j = i + 1;
+    while (j < _clusters.size() &&
+           std::fabs(_clusters[j].mean - cluster.mean) < mergeThreshold) {
+      float total = cluster.count + _clusters[j].count;
+      cluster.mean =
+          (cluster.mean * cluster.count + _clusters[j].mean * _clusters[j].count) /
+          total;
+      cluster.min = std::min(cluster.min, _clusters[j].min);
+      cluster.max = std::max(cluster.max, _clusters[j].max);
+      cluster.count += _clusters[j].count;
+      ++j;
+    }
+    if (cluster.count >= minCount)
+      merged.push_back(cluster);
+    i = j;
+  }
+  _clusters = std::move(merged);
+}
 
 void SpinningMethod::saveCalibration() const {
   if (_storage)
-    _storage->save(_clusterMgr.clusters(), CALIBRATION_VERSION);
+    _storage->save(_clusters, CALIBRATION_VERSION);
 }
 
 void SpinningMethod::calibrate() {

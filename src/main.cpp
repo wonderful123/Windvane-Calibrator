@@ -4,6 +4,7 @@
 #include <Storage/FileCalibrationStorage.h>
 #include <IO/SerialIOHandler.h>
 #include <Diagnostics/SerialDiagnostics.h>
+
 #include "Config.h"
 
 ESP32ADC adc(WINDVANE_GPIO_PIN);
