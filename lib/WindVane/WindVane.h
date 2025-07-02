@@ -46,7 +46,8 @@ public:
    * to an IADC object, which is determined by the HARDWARE parameter.
    */
   WindVane(IADC *adc, WindVaneType type, CalibrationMethod method,
-           ICalibrationStorage *storage, IIOHandler *io, IDiagnostics *diag);
+           ICalibrationStorage *storage, IIOHandler *io, IDiagnostics *diag,
+           const SpinningConfig &config = {});
 
   /**
    * @brief Gets the calibrated wind direction.

@@ -7,9 +7,10 @@
 WindVane::WindVane(IADC *adc, WindVaneType type,
                    CalibrationMethod method,
                    ICalibrationStorage *storage, IIOHandler *io,
-                   IDiagnostics *diag)
+                   IDiagnostics *diag,
+                   const SpinningConfig &config)
     : _adc(adc), _type(type), _storage(storage) {
-    auto strategy = createCalibrationStrategy(method, adc, storage, io, diag);
+    auto strategy = createCalibrationStrategy(method, adc, storage, io, diag, config);
     _calibrationManager = std::make_unique<CalibrationManager>(std::move(strategy), io, diag);
 }
 

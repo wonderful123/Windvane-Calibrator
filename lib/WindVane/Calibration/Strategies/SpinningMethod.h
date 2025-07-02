@@ -13,10 +13,19 @@ class IADC;
 
 // Implements a spinning calibration strategy that records unique positions
 // while the user rotates the vane.
+struct SpinningConfig {
+  float threshold = 0.05f;      ///< Minimum delta to consider a new position
+  int bufferSize = 5;           ///< Number of samples for noise filtering
+  int expectedPositions = 16;   ///< Expected number of detent positions
+  int sampleDelayMs = 10;       ///< Delay between samples
+  int stallTimeoutSec = 5;      ///< Seconds without new detections before prompt
+};
+
 class SpinningMethod : public ICalibrationStrategy {
 public:
   SpinningMethod(IADC *adc, ICalibrationStorage *storage,
-                 IIOHandler *io, IDiagnostics *diag);
+                 IIOHandler *io, IDiagnostics *diag,
+                 SpinningConfig config = {});
 
   // Runs the interactive calibration procedure.
   void calibrate() override;
@@ -33,6 +42,7 @@ private:
   IDiagnostics *_diag;
   ClusterManager _clusterMgr;
   std::deque<float> _recent;
+  SpinningConfig _config;
 
   void saveCalibration() const;
 };

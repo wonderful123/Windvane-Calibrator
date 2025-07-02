@@ -16,14 +16,8 @@ public:
   CalibrationManager(std::unique_ptr<ICalibrationStrategy> strategy,
                      IIOHandler *io, IDiagnostics *diag);
 
-  // Starts the calibration process and sets status to AwaitingStart
-  bool startCalibration();
-
-  // Begins the actual calibration based on a received signal
+  // Prepares the device for calibration and waits for user confirmation
   bool beginCalibration();
-
-  // Ends the calibration and sets status to Completed
-  bool endCalibration();
 
   // Runs the full calibration process in a single step
   bool runCalibration();

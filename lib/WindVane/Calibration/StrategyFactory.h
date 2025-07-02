@@ -1,6 +1,7 @@
 #pragma once
 #include "CalibrationMethod.h"
 #include "Strategies/ICalibrationStrategy.h"
+#include "Strategies/SpinningMethod.h"
 #include "../IADC.h"
 #include "../Storage/ICalibrationStorage.h"
 #include "../IO/IIOHandler.h"
@@ -12,4 +13,5 @@ std::unique_ptr<ICalibrationStrategy> createCalibrationStrategy(
     IADC *adc,
     ICalibrationStorage *storage,
     IIOHandler *io,
-    IDiagnostics *diag);
+    IDiagnostics *diag,
+    const SpinningConfig &config = {});

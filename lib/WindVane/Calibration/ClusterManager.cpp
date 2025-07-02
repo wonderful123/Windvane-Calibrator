@@ -1,6 +1,14 @@
 #include "ClusterManager.h"
 #include <string>
 
+namespace {
+float normalize360(float angle) {
+    while (angle < 0.0f) angle += 360.0f;
+    while (angle >= 360.0f) angle -= 360.0f;
+    return angle;
+}
+}
+
 void ClusterManager::clear() {
     _clusters.clear();
     _anomalyCount = 0;
@@ -83,7 +91,7 @@ void ClusterManager::setClusters(const std::vector<ClusterData>& clusters) {
 
 float ClusterManager::interpolate(float reading) const {
     if (_clusters.empty())
-        return reading * 360.0f;
+        return normalize360(reading * 360.0f);
 
     size_t n = _clusters.size();
     // handle wrap-around before first cluster
@@ -91,8 +99,7 @@ float ClusterManager::interpolate(float reading) const {
         float prev = _clusters.back().mean - 1.0f;
         float ratio = (reading - prev) / (_clusters.front().mean - prev);
         float angle = (n - 1 + ratio) * 360.0f / n;
-        if (angle >= 360.0f) angle -= 360.0f;
-        return angle;
+        return normalize360(angle);
     }
     for (size_t i = 0; i < n; ++i) {
         const float curr = _clusters[i].mean;
@@ -100,15 +107,13 @@ float ClusterManager::interpolate(float reading) const {
         if (reading >= curr && reading < next) {
             float ratio = (reading - curr) / (next - curr);
             float angle = (i + ratio) * 360.0f / n;
-            if (angle >= 360.0f) angle -= 360.0f;
-            return angle;
+            return normalize360(angle);
         }
     }
     // if reading >= last cluster mean
     float ratio = (reading - _clusters.back().mean) /
                   (_clusters.front().mean + 1.0f - _clusters.back().mean);
     float angle = (n - 1 + ratio) * 360.0f / n;
-    if (angle >= 360.0f) angle -= 360.0f;
-    return angle;
+    return normalize360(angle);
 }
 

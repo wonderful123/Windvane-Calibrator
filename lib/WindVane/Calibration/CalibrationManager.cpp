@@ -7,19 +7,13 @@ CalibrationManager::CalibrationManager(std::unique_ptr<ICalibrationStrategy> str
       status(CalibrationStatus::NotStarted),
       _io(io), _diag(diag) {}
 
-bool CalibrationManager::startCalibration() {
-  if (status == CalibrationStatus::InProgress)
+bool CalibrationManager::beginCalibration() {
+  if (status != CalibrationStatus::NotStarted &&
+      status != CalibrationStatus::Completed)
     return false;
   status = CalibrationStatus::AwaitingStart;
   if (_diag)
     _diag->info("Ready to calibrate. Press any key to start.");
-  return true;
-}
-
-
-bool CalibrationManager::beginCalibration() {
-  if (status != CalibrationStatus::AwaitingStart)
-    return false;
   if (_io) {
     while (!_io->hasInput())
       _io->waitMs(10);
@@ -34,23 +28,8 @@ bool CalibrationManager::beginCalibration() {
   return true;
 }
 
-bool CalibrationManager::endCalibration() {
-  if (status != CalibrationStatus::InProgress)
-    return false;
-  status = CalibrationStatus::Completed;
-  if (_diag)
-    _diag->info("Calibration ended.");
-  return true;
-}
-
 bool CalibrationManager::runCalibration() {
-  if (!startCalibration())
-    return false;
-  beginCalibration();
-  // If calibration is aborted internally, status will be Completed already
-  if (status == CalibrationStatus::InProgress)
-    endCalibration();
-  return true;
+  return beginCalibration();
 }
 
 float CalibrationManager::getCalibratedData(float rawWindDirection) const {

@@ -4,6 +4,10 @@
 
 This project aims to provide a robust and flexible calibration mechanism for wind vanes using Arduino. It supports multiple calibration strategies, including user-set directions, compass combination, and spinning the vane multiple times.
 
+The ADC interface used by the library returns values in the range `[0,1]`
+representing a full rotation. All calibration and interpolation routines assume
+readings are normalized to this range and convert them to degrees in `[0,360)`.
+
 ---
 
 ## Table of Contents
