@@ -17,6 +17,7 @@ void CalibrationManager::startCalibration() {
 #endif
 }
 
+
 void CalibrationManager::beginCalibration() {
   status = CalibrationStatus::InProgress;
   if (calibrationStrategy)
