@@ -3,6 +3,11 @@
 #include <deque>
 #include <vector>
 #include <cstdint>
+#include "../ClusterData.h"
+#include "../ClusterManager.h"
+#include "../../Storage/ICalibrationStorage.h"
+#include "../../IO/IIOHandler.h"
+#include "../../Diagnostics/IDiagnostics.h"
 
 class IADC;
 
@@ -10,7 +15,8 @@ class IADC;
 // while the user rotates the vane.
 class SpinningMethod : public ICalibrationStrategy {
 public:
-  explicit SpinningMethod(IADC *adc);
+  SpinningMethod(IADC *adc, ICalibrationStorage *storage,
+                 IIOHandler *io, IDiagnostics *diag);
 
   // Runs the interactive calibration procedure.
   void calibrate() override;
@@ -18,35 +24,12 @@ public:
   static constexpr int CALIBRATION_VERSION = 1;
 
 private:
-  class IOHandler {
-  public:
-    bool hasInput() const;
-    char readInput() const;
-    void flushInput() const;
-    void waitMs(int ms) const;
-#ifdef ARDUINO
-    bool yesNoPrompt(const __FlashStringHelper *prompt) const;
-#else
-    bool yesNoPrompt(const char *prompt) const;
-#endif
-  };
-
-  struct PositionCluster {
-    float mean;
-    float min;
-    float max;
-    int count;
-  };
-
   IADC *_adc;
-  IOHandler _io;
-  std::vector<PositionCluster> _clusters;
+  ICalibrationStorage *_storage;
+  IIOHandler *_io;
+  IDiagnostics *_diag;
+  ClusterManager _clusterMgr;
   std::deque<float> _recent;
-  int _anomalyCount{0};
 
-  void mergeAndPruneClusters(float mergeThreshold, int minCount);
-
-  bool addOrUpdateCluster(float reading, float threshold);
   void saveCalibration() const;
-  void printDiagnostics() const;
 };
