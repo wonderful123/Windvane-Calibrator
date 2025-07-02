@@ -8,6 +8,7 @@
 #include <chrono>
 #include <cmath>
 #include <fstream>
+#include <algorithm>
 #include <iostream>
 #include <thread>
 #endif
@@ -16,25 +17,32 @@ using namespace std::chrono_literals;
 
 SpinningMethod::SpinningMethod(IADC *adc) : _adc(adc) {}
 
-bool SpinningMethod::isNewPosition(float reading, float threshold) const {
-  for (float pos : _positions) {
-    if (std::fabs(reading - pos) < threshold)
+
+bool SpinningMethod::addOrUpdateCluster(float reading, float threshold) {
+  for (auto &cluster : _clusters) {
+    if (std::fabs(reading - cluster.mean) < threshold) {
+      cluster.mean = (cluster.mean * cluster.count + reading) / (cluster.count + 1);
+      cluster.min = std::min(cluster.min, reading);
+      cluster.max = std::max(cluster.max, reading);
+      ++cluster.count;
       return false;
+    }
   }
+  _clusters.push_back({reading, reading, reading, 1});
   return true;
 }
 
 void SpinningMethod::saveCalibration() const {
 #ifdef ARDUINO
-  EEPROM.begin(_positions.size() * sizeof(float));
-  for (size_t i = 0; i < _positions.size(); ++i) {
-    EEPROM.put(i * sizeof(float), _positions[i]);
+  EEPROM.begin(_clusters.size() * sizeof(float));
+  for (size_t i = 0; i < _clusters.size(); ++i) {
+    EEPROM.put(i * sizeof(float), _clusters[i].mean);
   }
   EEPROM.commit();
 #else
   std::ofstream ofs("calibration.dat");
-  for (size_t i = 0; i < _positions.size(); ++i) {
-    ofs << _positions[i] << "\n";
+  for (size_t i = 0; i < _clusters.size(); ++i) {
+    ofs << _clusters[i].mean << "\n";
   }
 #endif
 }
@@ -54,54 +62,77 @@ void SpinningMethod::calibrate() {
   std::cin.get();
 #endif
 
-  const float threshold = 0.05f; // sensor difference threshold
-  const int stableSamples = 5;   // debounce count
+  const float threshold = 0.05f;      // sensor difference threshold
+  const int bufferSize = 5;            // samples in circular buffer
+  const int expectedPositions = 16;    // typical reed switch count
   const std::chrono::milliseconds sampleDelay(10);
 
-  float last = _adc->read();
-  int stableCount = 0;
-  _positions.clear();
-
-  size_t lastPositionCount = 0;
-  int rotationsWithoutNew = 0;
+  _clusters.clear();
+  _recent.clear();
+  _anomalyCount = 0;
+  size_t previousCount = 0;
   bool stop = false;
+  float prevReading = -1.0f;
 
   while (!stop) {
     float reading = _adc->read();
-    if (std::fabs(reading - last) < threshold) {
-      ++stableCount;
+
+    if (reading <= 0.0f || reading >= 1.0f) {
+      ++_anomalyCount;
     } else {
-      stableCount = 0;
-      last = reading;
-    }
+      _recent.push_back(reading);
+      if (_recent.size() > bufferSize)
+        _recent.pop_front();
 
-    if (stableCount >= stableSamples) {
-      if (isNewPosition(reading, threshold)) {
-        _positions.push_back(reading);
-        rotationsWithoutNew = 0;
-        lastPositionCount = _positions.size();
-#ifdef ARDUINO
-        Serial.print(F("Position detected: "));
-        Serial.println(_positions.size());
-#else
-        std::cout << "Position detected: " << _positions.size() << std::endl;
-#endif
-      } else if (!_positions.empty() &&
-                 std::fabs(reading - _positions.front()) < threshold) {
-        if (lastPositionCount == _positions.size()) {
-          ++rotationsWithoutNew;
-        } else {
-          rotationsWithoutNew = 0;
-          lastPositionCount = _positions.size();
-        }
+      int inRange = 0;
+      for (float r : _recent) {
+        if (std::fabs(r - reading) < threshold)
+          ++inRange;
       }
+
+      if (inRange > static_cast<int>(_recent.size()) / 2) {
+        bool added = addOrUpdateCluster(reading, threshold);
+        if (_clusters.size() != previousCount) {
+#ifdef ARDUINO
+          Serial.print(F("Position detected: "));
+          Serial.print(_clusters.size());
+          Serial.print(F("/"));
+          Serial.println(expectedPositions);
+          if (_clusters.size() > 1) {
+            float separation =
+                _clusters.back().mean - _clusters[_clusters.size() - 2].mean;
+            if (separation < threshold * 2) {
+              Serial.println(F("Warning: positions very close"));
+            }
+          }
+#else
+          std::cout << "Position detected: " << _clusters.size() << "/"
+                    << expectedPositions << std::endl;
+          if (_clusters.size() > 1) {
+            float separation =
+                _clusters.back().mean - _clusters[_clusters.size() - 2].mean;
+            if (separation < threshold * 2) {
+              std::cout << "Warning: positions very close" << std::endl;
+            }
+          }
+#endif
+          previousCount = _clusters.size();
+        }
+
+        (void)added; // suppress unused warning if above block disabled
+      }
+
+      if (prevReading >= 0 && reading < prevReading) {
+#ifdef ARDUINO
+        Serial.println(F("Warning: reverse rotation detected"));
+#else
+        std::cout << "Warning: reverse rotation detected" << std::endl;
+#endif
+      }
+      prevReading = reading;
     }
 
-    float certainty = std::min(rotationsWithoutNew / 2.0f, 1.0f) * 100.0f;
 #ifdef ARDUINO
-    Serial.print(F("Certainty: "));
-    Serial.print(certainty, 1);
-    Serial.println(F("%"));
     if (Serial.available()) {
       char c = Serial.read();
       if (c == 's' || c == 'S')
@@ -109,7 +140,6 @@ void SpinningMethod::calibrate() {
     }
     delay(sampleDelay.count());
 #else
-    std::cout << "Certainty: " << certainty << "%" << std::endl;
     if (std::cin.rdbuf()->in_avail()) {
       char c;
       std::cin.get(c);
@@ -126,5 +156,29 @@ void SpinningMethod::calibrate() {
   std::cout << "Calibration stopped." << std::endl;
 #endif
 
+  std::sort(_clusters.begin(), _clusters.end(),
+            [](const PositionCluster &a, const PositionCluster &b) {
+              return a.mean < b.mean;
+            });
   saveCalibration();
+  printDiagnostics();
+}
+
+void SpinningMethod::printDiagnostics() const {
+#ifdef ARDUINO
+  Serial.print(F("Anomalies detected: ")); Serial.println(_anomalyCount);
+  for (size_t i = 0; i < _clusters.size(); ++i) {
+    Serial.print(F("Cluster ")); Serial.print(i);
+    Serial.print(F(": mean=")); Serial.print(_clusters[i].mean, 4);
+    Serial.print(F(" min=")); Serial.print(_clusters[i].min, 4);
+    Serial.print(F(" max=")); Serial.println(_clusters[i].max, 4);
+  }
+#else
+  std::cout << "Anomalies detected: " << _anomalyCount << std::endl;
+  for (size_t i = 0; i < _clusters.size(); ++i) {
+    std::cout << "Cluster " << i << ": mean=" << _clusters[i].mean
+              << " min=" << _clusters[i].min
+              << " max=" << _clusters[i].max << std::endl;
+  }
+#endif
 }

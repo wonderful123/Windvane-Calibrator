@@ -31,10 +31,11 @@ This project aims to provide a robust and flexible calibration mechanism for win
 
 Upload the code to your Arduino board and open the serial monitor. After
 aligning the vane to your forward reference press any key to begin
-calibration. Slowly rotate the vane; each stable position is detected and
-reported along with a certainty percentage that increases as additional
-rotations reveal no new positions. When you are happy with the certainty press
-`s` to stop the calibration and store the data.
+calibration. Slowly rotate the vane; the calibrator dynamically clusters
+stable readings to determine each switch position. Progress is reported as
+"position detected" messages. When all positions are found or you are happy
+with the results press `s` to stop and store the calibration. Diagnostics are
+printed at the end showing mean, min and max for each detected position.
 
 ---
 
