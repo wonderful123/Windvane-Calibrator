@@ -1,34 +1,45 @@
 #include "Calibration/CalibrationManager.h"
-#ifdef ARDUINO
-#include <Arduino.h>
-#else
 #include <iostream>
-#endif
 
-CalibrationManager::CalibrationManager(ICalibrationStrategy *strategy)
-    : calibrationStrategy(strategy), status(CalibrationStatus::NotStarted) {}
+CalibrationManager::CalibrationManager(ICalibrationStrategy *strategy,
+                                       IIOHandler *io, IDiagnostics *diag)
+    : calibrationStrategy(strategy), status(CalibrationStatus::NotStarted),
+      _io(io), _diag(diag) {}
 
-void CalibrationManager::startCalibration() {
+bool CalibrationManager::startCalibration() {
+  if (status == CalibrationStatus::InProgress)
+    return false;
   status = CalibrationStatus::AwaitingStart;
-#ifdef ARDUINO
-  Serial.println(F("Ready to calibrate. Press a key to start spinning."));
-#else
-  std::cout << "Ready to calibrate. Begin spinning." << std::endl;
-#endif
+  if (_diag)
+    _diag->info("Ready to calibrate. Press any key to start.");
+  return true;
 }
 
 
-void CalibrationManager::beginCalibration() {
+bool CalibrationManager::beginCalibration() {
+  if (status != CalibrationStatus::AwaitingStart)
+    return false;
+  if (_io) {
+    while (!_io->hasInput())
+      _io->waitMs(10);
+    _io->flushInput();
+  }
   status = CalibrationStatus::InProgress;
   if (calibrationStrategy)
     calibrationStrategy->calibrate();
   status = CalibrationStatus::Completed;
+  if (_diag)
+    _diag->info("Calibration finished.");
+  return true;
 }
 
-void CalibrationManager::endCalibration() {
-  // Logic to end calibration
+bool CalibrationManager::endCalibration() {
+  if (status != CalibrationStatus::InProgress)
+    return false;
   status = CalibrationStatus::Completed;
-  // Finalize calibration and store data
+  if (_diag)
+    _diag->info("Calibration ended.");
+  return true;
 }
 
 void CalibrationManager::getCalibratedData(float rawWindDirection) {
