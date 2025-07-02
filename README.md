@@ -30,6 +30,10 @@ This project aims to provide a robust and flexible calibration mechanism for win
 ## Usage
 
 Upload the code to your Arduino board and follow the on-screen prompts to perform calibration.
+Upon startup the firmware guides you through a spinning calibration process.
+Simply align the vane to your forward reference and rotate it slowly.
+Each stable position is detected automatically and progress is printed to the
+serial console until a full rotation is captured.
 
 ---
 

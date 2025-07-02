@@ -1,18 +1,27 @@
 #include "Calibration/CalibrationManager.h"
+#ifdef ARDUINO
+#include <Arduino.h>
+#else
+#include <iostream>
+#endif
 
-CalibrationManager::CalibrationManager(ICalibrationStrategy* strategy)
-  : calibrationStrategy(strategy), status(CalibrationStatus::NotStarted) {}
+CalibrationManager::CalibrationManager(ICalibrationStrategy *strategy)
+    : calibrationStrategy(strategy), status(CalibrationStatus::NotStarted) {}
 
 void CalibrationManager::startCalibration() {
-  // Logic to start the calibration
   status = CalibrationStatus::AwaitingStart;
-  // Send confirmation message and instructions (via Serial, etc.)
+#ifdef ARDUINO
+  Serial.println(F("Ready to calibrate. Press a key to start spinning."));
+#else
+  std::cout << "Ready to calibrate. Begin spinning." << std::endl;
+#endif
 }
 
 void CalibrationManager::beginCalibration() {
-  // Logic to actually begin calibration
   status = CalibrationStatus::InProgress;
-  // Start the calibration using the strategy
+  if (calibrationStrategy)
+    calibrationStrategy->calibrate();
+  status = CalibrationStatus::Completed;
 }
 
 void CalibrationManager::endCalibration() {

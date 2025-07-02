@@ -1,4 +1,4 @@
-#include "ESP32ADC.h"
+#include "ADC.h"
 
 #ifdef UNIT_TEST
   #include "ArduinoFake.h"

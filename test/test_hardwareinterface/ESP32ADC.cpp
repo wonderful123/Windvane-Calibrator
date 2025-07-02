@@ -1,4 +1,5 @@
-#include <HardwareInterface/ESP32ADC.h>
+#include "../../src/Hardware/ESP32/ADC.h"
+#include "../../lib/WindVane/IADC.h"
 #include <gtest/gtest.h>
 
 class ESP32ADCTest : public ::testing::Test {
