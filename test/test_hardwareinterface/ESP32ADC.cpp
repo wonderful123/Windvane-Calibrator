@@ -22,8 +22,10 @@ TEST_F(ESP32ADCTest, GPIOPinSet) {
   EXPECT_EQ(esp32adc_obj->getPin(), 1);
 }
 
-TEST(ESP32ADCTest, ESP32ADC) {
-  auto esp32adc = std::make_unique<ESP32ADC>(1);
+TEST_F(ESP32ADCTest, ESP32ADC) {
+  auto adc = std::make_unique<ESP32ADC>(1);
+  auto obj = dynamic_cast<ESP32ADC *>(adc.get());
+  ASSERT_NE(nullptr, obj);
 }
 
 #if defined(ARDUINO)

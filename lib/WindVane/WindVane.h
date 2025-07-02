@@ -3,6 +3,9 @@
 #include "Calibration/Calibrator.h"
 #include "IADC.h"
 #include "Calibration/CalibrationManager.h"
+#include "Storage/ICalibrationStorage.h"
+#include "IO/IIOHandler.h"
+#include "Diagnostics/IDiagnostics.h"
 
 /**
  * @enum WindVaneType
@@ -40,7 +43,8 @@ public:
    * The constructor delegates the responsibility of hardware interaction
    * to an IADC object, which is determined by the HARDWARE parameter.
    */
-  WindVane(IADC *adc, WindVaneType type, CalibrationMethod method);
+  WindVane(IADC *adc, WindVaneType type, CalibrationMethod method,
+           ICalibrationStorage *storage, IIOHandler *io, IDiagnostics *diag);
 
   /**
    * @brief Gets the calibrated wind direction.
@@ -72,4 +76,5 @@ private:
   Calibrator *_calibrator;
   WindVaneType _type;
   CalibrationManager *_calibrationManager;
+  ICalibrationStorage *_storage;
 };
