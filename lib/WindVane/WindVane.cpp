@@ -23,11 +23,7 @@ float WindVane::getRawDirection() {
     return _adc ? _adc->read() : 0.0f;
 }
 
-void WindVane::startCalibration() {
-    _calibrationManager->startCalibration();
-    _calibrationManager->beginCalibration();
-}
-
-void WindVane::stopCalibration() {
-    _calibrationManager->endCalibration();
+void WindVane::runCalibration() {
+    if (_calibrationManager)
+        _calibrationManager->runCalibration();
 }

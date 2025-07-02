@@ -56,12 +56,12 @@ public:
   float direction();
 
   /**
-   * @brief Initiates the calibration process.
+   * @brief Runs the interactive calibration routine.
    *
-   * Starts the calibration process using the selected calibration method.
+   * This method performs the complete calibration workflow and blocks until
+   * finished.
    */
-  void startCalibration();
-  void stopCalibration();
+  void runCalibration();
 
 private:
   /**

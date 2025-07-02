@@ -43,6 +43,16 @@ bool CalibrationManager::endCalibration() {
   return true;
 }
 
+bool CalibrationManager::runCalibration() {
+  if (!startCalibration())
+    return false;
+  beginCalibration();
+  // If calibration is aborted internally, status will be Completed already
+  if (status == CalibrationStatus::InProgress)
+    endCalibration();
+  return true;
+}
+
 float CalibrationManager::getCalibratedData(float rawWindDirection) const {
   if (calibrationStrategy)
     return calibrationStrategy->mapReading(rawWindDirection);

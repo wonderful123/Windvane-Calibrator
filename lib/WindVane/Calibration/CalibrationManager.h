@@ -25,6 +25,9 @@ public:
   // Ends the calibration and sets status to Completed
   bool endCalibration();
 
+  // Runs the full calibration process in a single step
+  bool runCalibration();
+
   // Converts a raw wind reading to calibrated degrees
   float getCalibratedData(float rawWindDirection) const;
 
