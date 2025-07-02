@@ -3,9 +3,11 @@
 #include "Calibration/Calibrator.h"
 #include "IADC.h"
 #include "Calibration/CalibrationManager.h"
+#include "Calibration/StrategyFactory.h"
 #include "Storage/ICalibrationStorage.h"
 #include "IO/IIOHandler.h"
 #include "Diagnostics/IDiagnostics.h"
+#include <memory>
 
 /**
  * @enum WindVaneType
@@ -75,6 +77,6 @@ private:
   IADC *_adc;
   Calibrator *_calibrator;
   WindVaneType _type;
-  CalibrationManager *_calibrationManager;
+  std::unique_ptr<CalibrationManager> _calibrationManager;
   ICalibrationStorage *_storage;
 };

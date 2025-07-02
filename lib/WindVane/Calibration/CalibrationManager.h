@@ -2,6 +2,7 @@
 #include "Calibration/Strategies/ICalibrationStrategy.h"
 #include "../IO/IIOHandler.h"
 #include "../Diagnostics/IDiagnostics.h"
+#include <memory>
 
 class CalibrationManager {
 public:
@@ -12,8 +13,8 @@ public:
     Completed
   };
 
-  CalibrationManager(ICalibrationStrategy *strategy, IIOHandler *io,
-                     IDiagnostics *diag);
+  CalibrationManager(std::unique_ptr<ICalibrationStrategy> strategy,
+                     IIOHandler *io, IDiagnostics *diag);
 
   // Starts the calibration process and sets status to AwaitingStart
   bool startCalibration();
@@ -34,7 +35,7 @@ public:
   CalibrationStatus getStatus() const;
 
 private:
-  ICalibrationStrategy *calibrationStrategy;
+  std::unique_ptr<ICalibrationStrategy> calibrationStrategy;
   CalibrationStatus status;
   IIOHandler *_io;
   IDiagnostics *_diag;

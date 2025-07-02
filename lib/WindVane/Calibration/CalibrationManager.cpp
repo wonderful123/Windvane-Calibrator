@@ -1,9 +1,10 @@
 #include "Calibration/CalibrationManager.h"
 #include <iostream>
 
-CalibrationManager::CalibrationManager(ICalibrationStrategy *strategy,
+CalibrationManager::CalibrationManager(std::unique_ptr<ICalibrationStrategy> strategy,
                                        IIOHandler *io, IDiagnostics *diag)
-    : calibrationStrategy(strategy), status(CalibrationStatus::NotStarted),
+    : calibrationStrategy(std::move(strategy)),
+      status(CalibrationStatus::NotStarted),
       _io(io), _diag(diag) {}
 
 bool CalibrationManager::startCalibration() {

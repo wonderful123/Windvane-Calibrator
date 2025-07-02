@@ -1,5 +1,5 @@
 #include "WindVane.h"
-#include "Calibration/Strategies/SpinningMethod.h"
+#include "Calibration/StrategyFactory.h"
 #include "Storage/ICalibrationStorage.h"
 #include "IO/IIOHandler.h"
 #include "Diagnostics/IDiagnostics.h"
@@ -9,8 +9,8 @@ WindVane::WindVane(IADC *adc, WindVaneType type,
                    ICalibrationStorage *storage, IIOHandler *io,
                    IDiagnostics *diag)
     : _adc(adc), _type(type), _storage(storage) {
-    _calibrationManager = new CalibrationManager(
-        new SpinningMethod(adc, storage, io, diag), io, diag);
+    auto strategy = createCalibrationStrategy(method, adc, storage, io, diag);
+    _calibrationManager = std::make_unique<CalibrationManager>(std::move(strategy), io, diag);
 }
 
 void WindVane::startCalibration() {
