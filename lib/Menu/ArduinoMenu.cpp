@@ -6,11 +6,14 @@
 
 ArduinoMenu::ArduinoMenu(WindVane* vane, IIOHandler* io, IDiagnostics* diag)
     : _vane(vane), _io(io), _diag(diag), _state(State::Main),
-      _lastActivity(0), _lastCalibration(0) {}
+      _lastActivity(0), _lastCalibration(0) {
+    _buffered = dynamic_cast<BufferedDiagnostics*>(diag);
+}
 
 void ArduinoMenu::begin() {
     showMainMenu();
     _lastActivity = millis();
+    _lastCalibration = _vane->lastCalibrationTimestamp();
 }
 
 void ArduinoMenu::update() {
@@ -41,9 +44,18 @@ void ArduinoMenu::showStatusLine() {
     float dir = _vane->direction();
     unsigned long ago = (millis() - _lastCalibration)/60000UL;
 #ifdef ARDUINO
+    const char* statusStr = "Unknown";
+    switch (_vane->calibrationStatus()) {
+        case CalibrationManager::CalibrationStatus::NotStarted: statusStr = "Uncal"; break;
+        case CalibrationManager::CalibrationStatus::AwaitingStart: statusStr = "Awaiting"; break;
+        case CalibrationManager::CalibrationStatus::InProgress: statusStr = "Calibrating"; break;
+        case CalibrationManager::CalibrationStatus::Completed: statusStr = "OK"; break;
+    }
     Serial.print("\rDir: ");
     Serial.print(dir,1);
-    Serial.print("\xC2\xB0 Status: OK Cal: ");
+    Serial.print("\xC2\xB0 Status: ");
+    Serial.print(statusStr);
+    Serial.print(" Cal: ");
     Serial.print(ago);
     Serial.print("m    \r");
 #endif
@@ -113,23 +125,62 @@ void ArduinoMenu::runCalibration() {
     if (_io->yesNoPrompt("Start calibration? (Y/N)")) {
         _vane->runCalibration();
         _lastCalibration = millis();
+        if (_buffered)
+            _buffered->info("Calibration completed");
     }
 }
 
 void ArduinoMenu::showDiagnostics() {
 #ifdef ARDUINO
-    Serial.println("Diagnostics not implemented");
+    Serial.println("--- Diagnostics ---");
+    Serial.print("Calibration status: ");
+    switch (_vane->calibrationStatus()) {
+        case CalibrationManager::CalibrationStatus::Completed: Serial.println("OK"); break;
+        case CalibrationManager::CalibrationStatus::InProgress: Serial.println("In progress"); break;
+        case CalibrationManager::CalibrationStatus::AwaitingStart: Serial.println("Awaiting"); break;
+        default: Serial.println("Not started"); break;
+    }
+    Serial.print("Last calibration: ");
+    Serial.print((millis() - _lastCalibration)/60000UL);
+    Serial.println(" minutes ago");
+    if (_buffered) {
+        for (const auto& msg : _buffered->history())
+            Serial.println(msg.c_str());
+    }
+    Serial.println("Press any key to return");
+    while (!_io->hasInput())
+        _io->waitMs(10);
+    _io->flushInput();
 #endif
 }
 
 void ArduinoMenu::settingsMenu() {
 #ifdef ARDUINO
-    Serial.println("Settings not implemented");
+    Serial.println("--- Settings ---");
+    Serial.println("[R] Restore defaults");
+    Serial.println("[B] Back");
+    while (true) {
+        while (!_io->hasInput()) _io->waitMs(10);
+        char c = _io->readInput();
+        if (c == 'R' || c == 'r') {
+            if (_io->yesNoPrompt("Restore factory calibration? (Y/N)")) {
+                _vane->runCalibration();
+                _lastCalibration = millis();
+            }
+            break;
+        }
+        if (c == 'B' || c == 'b') break;
+    }
 #endif
 }
 
 void ArduinoMenu::showHelp() {
 #ifdef ARDUINO
-    Serial.println("Use menu keys to operate.\nC: Calibrate, D: Display direction");
+    Serial.println("--- Help ---");
+    Serial.println("D: Live wind direction display");
+    Serial.println("C: Start calibration routine");
+    Serial.println("G: View diagnostics log");
+    Serial.println("S: Settings and maintenance");
+    Serial.println("H: Show this help text");
 #endif
 }

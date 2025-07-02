@@ -2,6 +2,7 @@
 #include <WindVane.h>
 #include <IO/IIOHandler.h>
 #include <Diagnostics/IDiagnostics.h>
+#include <Diagnostics/BufferedDiagnostics.h>
 
 class ArduinoMenu {
 public:
@@ -14,6 +15,7 @@ private:
     WindVane* _vane;
     IIOHandler* _io;
     IDiagnostics* _diag;
+    BufferedDiagnostics* _buffered{nullptr};
     State _state;
     unsigned long _lastActivity;
     unsigned long _lastCalibration;
