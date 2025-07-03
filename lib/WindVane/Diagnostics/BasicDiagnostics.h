@@ -1,13 +1,18 @@
 #pragma once
-#include "IDiagnostics.h"
+#include "IDiagnosticsSink.h"
 #include <UI/IIO.h>
 
-class BasicDiagnostics : public IDiagnostics {
+class BasicDiagnostics final : public IDiagnosticsSink {
 public:
     explicit BasicDiagnostics(IOutput* out) : _out(out) {}
-    void info(const char* msg) override { if (_out) _out->writeln(msg); }
-    void warn(const char* msg) override { if (_out) _out->writeln(msg); }
+    void handle(const DiagnosticsEvent& ev) override {
+        if (!_out) return;
+        const char* lvl = ev.level == LogLevel::Info ? "INFO" : "WARN";
+        char buf[128];
+        snprintf(buf, sizeof(buf), "[%u] %s: %s",
+                 platform::toEmbedded(ev.timestamp), lvl, ev.message.c_str());
+        _out->writeln(buf);
+    }
 private:
     IOutput* _out;
 };
-

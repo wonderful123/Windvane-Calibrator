@@ -1,8 +1,8 @@
-#include "WindVaneMenuLogic.h"
+#include "MenuLogic.h"
 
 #include <Platform/IPlatform.h>
 
-WindVaneStatus WindVaneMenuLogic::queryStatus(WindVane* vane, platform::TimeMs lastCalibration,
+WindVaneStatus MenuLogic::queryStatus(WindVane* vane, platform::TimeMs lastCalibration,
                                               IPlatform& platform) const {
     WindVaneStatus status;
     if (vane) {
@@ -14,7 +14,7 @@ WindVaneStatus WindVaneMenuLogic::queryStatus(WindVane* vane, platform::TimeMs l
     return status;
 }
 
-const char* WindVaneMenuLogic::statusText(CalibrationManager::CalibrationStatus st) const {
+const char* MenuLogic::statusText(CalibrationManager::CalibrationStatus st) const {
     switch (st) {
         case CalibrationManager::CalibrationStatus::NotStarted:
             return "Uncal";

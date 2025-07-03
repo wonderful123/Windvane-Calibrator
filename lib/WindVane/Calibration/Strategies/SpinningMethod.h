@@ -7,7 +7,7 @@
 #include "../ClusterData.h"
 #include "../ClusterManager.h"
 #include "../SpinningConfig.h"
-#include "ISpinningConfigurable.h"
+#include "../CalibrationConfig.h"
 #include "../../Storage/ICalibrationStorage.h"
 #include "../../Diagnostics/IDiagnostics.h"
 
@@ -17,13 +17,13 @@ class IADC;
 // while the user rotates the vane.
 
 struct SpinningMethodDeps {
-  IADC *adc{};
-  ICalibrationStorage *storage{};
-  IDiagnostics *diag{};
+  IADC& adc;
+  ICalibrationStorage& storage;
+  IDiagnostics& diag;
   SpinningConfig config{};
 };
 
-class SpinningMethod : public ICalibrationStrategy, public ISpinningConfigurable {
+class SpinningMethod : public ICalibrationStrategy {
 public:
   explicit SpinningMethod(const SpinningMethodDeps &deps);
 
@@ -37,15 +37,19 @@ public:
   // Map a raw ADC reading to a calibrated direction in degrees
   float mapReading(float reading) const override;
 
-  SpinningConfig config() const override { return _config; }
-  void setConfig(const SpinningConfig& cfg) override { _config = cfg; }
+  CalibrationConfig config() const override {
+    CalibrationConfig cfg;
+    cfg.spin = _config;
+    return cfg;
+  }
+  void setConfig(const CalibrationConfig& cfg) override { _config = cfg.spin; }
 
   static constexpr int CALIBRATION_VERSION = 1;
 
 private:
-  IADC *_adc;
-  ICalibrationStorage *_storage;
-  IDiagnostics *_diag;
+  IADC& _adc;
+  ICalibrationStorage& _storage;
+  IDiagnostics& _diag;
   ClusterManager _clusterMgr;
   std::deque<float> _recent;
   SpinningConfig _config;

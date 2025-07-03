@@ -4,7 +4,7 @@
 
 #include <Platform/IPlatform.h>
 
-class WindVaneMenuLogic {
+class MenuLogic {
  public:
   WindVaneStatus queryStatus(WindVane* vane, platform::TimeMs lastCalibration,
                              IPlatform& platform) const;

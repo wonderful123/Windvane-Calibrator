@@ -1,17 +1,17 @@
 #pragma once
-#include "WindVaneMenuPresenter.h"
-#include "WindVaneMenuLogic.h"
+#include "MenuPresenter.h"
+#include "MenuLogic.h"
 #include "WindVaneStatus.h"
 #include <Platform/IPlatform.h>
 #include <Platform/TimeUtils.h>
 #include <UI/IIO.h>
 #include <string>
 
-class WindVaneMenuDisplayController {
+class MenuDisplayController {
 public:
-    WindVaneMenuDisplayController(IPlatform& platform, IUserIO& io, IOutput& out,
-                                  WindVaneMenuPresenter& presenter,
-                                  WindVaneMenuLogic& logic);
+    MenuDisplayController(IPlatform& platform, IUserIO& io, IOutput& out,
+                          MenuPresenter& presenter,
+                          MenuLogic& logic);
     void begin(WindVane& vane);
     void onInput();
     bool updateLiveDisplay(WindVane& vane) const;
@@ -29,8 +29,8 @@ private:
     IPlatform& _platform;
     IUserIO& _io;
     IOutput& _out;
-    WindVaneMenuPresenter& _presenter;
-    WindVaneMenuLogic& _logic;
+    MenuPresenter& _presenter;
+    MenuLogic& _logic;
 
     platform::TimeMs _lastActivity;
     platform::TimeMs _lastCalibration;

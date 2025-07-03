@@ -1,7 +1,7 @@
 #pragma once
 #include "IIO.h"
 #include <iostream>
-class ConsoleOutput : public IOutput {
+class ConsoleOutput final : public IOutput {
 public:
     void write(const char* text) const override { std::cout << text; }
     void writeln(const char* text) const override { std::cout << text << std::endl; }

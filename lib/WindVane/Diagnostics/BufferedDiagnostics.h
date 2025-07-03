@@ -1,28 +1,21 @@
 #pragma once
+#include "IDiagnosticsSink.h"
 #include "IDiagnostics.h"
+#include <UI/IIO.h>
 #include <deque>
 #include <string>
-#ifdef ARDUINO
-#include <Arduino.h>
-#endif
 
-class BufferedDiagnostics : public IDiagnostics, public IBufferedDiagnostics {
+class BufferedDiagnostics final : public IDiagnosticsSink, public IBufferedDiagnostics {
 public:
-    explicit BufferedDiagnostics(size_t maxEntries = 10)
-        : _maxEntries(maxEntries) {}
+    explicit BufferedDiagnostics(size_t maxEntries = 10, IOutput* out = nullptr)
+        : _maxEntries(maxEntries), _out(out) {}
 
-    void info(const char* msg) override {
-#ifdef ARDUINO
-        Serial.println(msg);
-#endif
-        push("INFO: " + std::string(msg));
-    }
-
-    void warn(const char* msg) override {
-#ifdef ARDUINO
-        Serial.println(msg);
-#endif
-        push("WARN: " + std::string(msg));
+    void handle(const DiagnosticsEvent& ev) override {
+        std::string lvl = ev.level == LogLevel::Info ? "INFO" : "WARN";
+        std::string msg = "[" + std::to_string(platform::toEmbedded(ev.timestamp)) + "] " + lvl + ": " + ev.message;
+        if (_out)
+            _out->writeln(msg.c_str());
+        push(msg);
     }
 
     const std::deque<std::string>& history() const override { return _messages; }
@@ -32,6 +25,7 @@ public:
 private:
     size_t _maxEntries;
     std::deque<std::string> _messages;
+    IOutput* _out;
 
     void push(const std::string& m) {
         if (_messages.size() >= _maxEntries)

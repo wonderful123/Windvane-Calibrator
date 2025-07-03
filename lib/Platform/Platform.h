@@ -1,16 +1,17 @@
 #pragma once
 #include "IPlatform.h"
-#include <WindVaneMenu/WindVaneMenuPresenter.h>
+#include <WindVaneMenu/MenuPresenter.h>
 
 #ifdef ARDUINO
 #include <Diagnostics/BasicDiagnostics.h>
+#include <Diagnostics/DiagnosticsBus.h>
 #include <UI/SerialIOHandler.h>
 #include <UI/SerialOutput.h>
 
 class ArduinoPlatform : public IPlatform {
 public:
-    platform::TimeMs millis() const override { return ::millis(); }
-    void renderStatusLine(WindVaneMenuPresenter& presenter,
+    platform::TimeMs millis() const override { return platform::TimeMs{::millis()}; }
+    void renderStatusLine(MenuPresenter& presenter,
                           const WindVaneStatus& st,
                           const char* statusStr,
                           const std::string& msg,
@@ -20,11 +21,13 @@ public:
     bool supportsColor() const override { return false; }
 };
 using Platform = ArduinoPlatform;
-using PlatformDiagnostics = BasicDiagnostics;
+using PlatformDiagnostics = DiagnosticsBus;
+using PlatformDiagnosticsSink = BasicDiagnostics;
 using PlatformIOHandler = SerialIOHandler;
 using PlatformOutput = SerialOutput;
 #else
 #include <Diagnostics/BasicDiagnostics.h>
+#include <Diagnostics/DiagnosticsBus.h>
 #include <UI/ConsoleIOHandler.h>
 #include <UI/ConsoleOutput.h>
 #include <chrono>
@@ -34,9 +37,9 @@ public:
     platform::TimeMs millis() const override {
         using namespace std::chrono;
         static auto start = steady_clock::now();
-        return duration_cast<milliseconds>(steady_clock::now() - start);
+        return platform::TimeMs{static_cast<platform::TimeMs::rep>(duration_cast<milliseconds>(steady_clock::now() - start).count())};
     }
-    void renderStatusLine(WindVaneMenuPresenter& presenter,
+    void renderStatusLine(MenuPresenter& presenter,
                           const WindVaneStatus& st,
                           const char* statusStr,
                           const std::string& msg,
@@ -46,7 +49,8 @@ public:
     bool supportsColor() const override { return true; }
 };
 using Platform = HostPlatform;
-using PlatformDiagnostics = BasicDiagnostics;
+using PlatformDiagnostics = DiagnosticsBus;
+using PlatformDiagnosticsSink = BasicDiagnostics;
 using PlatformIOHandler = ConsoleIOHandler;
 using PlatformOutput = ConsoleOutput;
 #endif

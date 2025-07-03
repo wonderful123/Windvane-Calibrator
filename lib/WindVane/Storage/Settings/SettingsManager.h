@@ -1,22 +1,41 @@
 #pragma once
 #include "SettingsData.h"
 #include "ISettingsStorage.h"
+#include "../StorageResult.h"
 #include <Diagnostics/IDiagnostics.h>
 #include <WindVane.h>
 
 /** Manages loading, applying and saving device settings. */
 class SettingsManager {
 public:
-    SettingsManager(ISettingsStorage* storage, SettingsData* data, IDiagnostics* diag)
-        : _storage(storage), _data(data), _diag(diag) {}
+    SettingsManager(ISettingsStorage& storage, IDiagnostics& diag);
 
-    bool load();
+    StorageResult load();
     void apply(WindVane& vane) const;
-    void save() const;
+    StorageResult save() const;
 
-    SettingsData& data() { return *_data; }
+    const SettingsData& data() const { return _data; }
+
+    // Spinning configuration getters/setters
+    float spinThreshold() const;
+    int spinBufferSize() const;
+    int spinExpectedPositions() const;
+    int spinSampleDelayMs() const;
+    int spinStallTimeoutSec() const;
+
+    PersistedMenuState menuState() const { return _data.menuState; }
+    void setMenuState(PersistedMenuState s);
+
+    void setSpinThreshold(float v);
+    void setSpinBufferSize(int v);
+    void setSpinExpectedPositions(int v);
+    void setSpinSampleDelayMs(int v);
+    void setSpinStallTimeoutSec(int v);
+
 private:
-    ISettingsStorage* _storage;
-    SettingsData* _data;
-    IDiagnostics* _diag;
+    void ensureValid();
+
+    ISettingsStorage& _storage;
+    SettingsData _data;
+    IDiagnostics& _diag;
 };

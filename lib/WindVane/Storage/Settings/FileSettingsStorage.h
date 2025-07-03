@@ -1,12 +1,13 @@
 #pragma once
-#include "ISettingsStorage.h"
+#include "SettingsStorageBase.h"
 #include <string>
+#include "../StorageResult.h"
 
-class FileSettingsStorage : public ISettingsStorage {
+class FileSettingsStorage final : public SettingsStorageBase {
 public:
     explicit FileSettingsStorage(const std::string& path);
-    void save(const SettingsData& data) override;
-    bool load(SettingsData& data) override;
+    StorageResult save(const SettingsData& data) override;
+    StorageResult load(SettingsData& data) override;
 private:
     std::string _path;
 };

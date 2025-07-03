@@ -6,7 +6,7 @@
 #include <limits>
 #include <thread>
 
-class ConsoleIOHandler : public IUserIO {
+class ConsoleIOHandler final : public IUserIO {
 public:
     bool hasInput() const override {
         return std::cin.rdbuf()->in_avail();

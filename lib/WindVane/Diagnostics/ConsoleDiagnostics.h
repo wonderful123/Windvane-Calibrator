@@ -1,10 +1,11 @@
 #pragma once
-#include "IDiagnostics.h"
+#include "IDiagnosticsSink.h"
 #include <iostream>
 
-class ConsoleDiagnostics : public IDiagnostics {
+class ConsoleDiagnostics : public IDiagnosticsSink {
 public:
-    void info(const char* msg) override { std::cout << msg << std::endl; }
-    void warn(const char* msg) override { std::cout << msg << std::endl; }
+    void handle(const DiagnosticsEvent& ev) override {
+        const char* lvl = ev.level == LogLevel::Info ? "INFO" : "WARN";
+        std::cout << '[' << platform::toEmbedded(ev.timestamp) << "] " << lvl << ": " << ev.message << std::endl;
+    }
 };
-

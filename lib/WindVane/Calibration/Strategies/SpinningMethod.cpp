@@ -14,19 +14,16 @@ using namespace std::chrono_literals;
 SpinningMethod::SpinningMethod(const SpinningMethodDeps &deps)
     : _adc(deps.adc), _storage(deps.storage),
       _diag(deps.diag), _config(deps.config) {
-  if (_storage) {
-    int version = 0;
-    std::vector<ClusterData> clusters;
-    if (_storage->load(clusters, version))
-      _clusterMgr.setClusters(clusters);
-  }
+  int version = 0;
+  std::vector<ClusterData> clusters;
+  if (_storage.load(clusters, version).ok())
+    _clusterMgr.setClusters(clusters);
 }
 
 
 
 void SpinningMethod::saveCalibration() const {
-  if (_storage)
-    _storage->save(_clusterMgr.clusters(), CALIBRATION_VERSION);
+  _storage.save(_clusterMgr.clusters(), CALIBRATION_VERSION);
 }
 
 void SpinningMethod::calibrate() {
@@ -45,7 +42,7 @@ void SpinningMethod::runSession(SessionState &state,
                                 std::chrono::milliseconds delay,
                                 std::chrono::seconds timeout) {
   while (!state.stop) {
-    float reading = _adc->read();
+    float reading = _adc.read();
     if (checkStall(std::chrono::steady_clock::now(), state.lastIncrease,
                    timeout))
       state.stop = true;
@@ -85,7 +82,7 @@ void SpinningMethod::updateClusters(float reading, SessionState &state) {
       std::string msg = "Position detected: " +
                         std::to_string(_clusterMgr.clusters().size()) + "/" +
                         std::to_string(_config.expectedPositions);
-      _diag->info(msg.c_str());
+      _diag.info(msg.c_str());
       state.previousCount = _clusterMgr.clusters().size();
       state.lastIncrease = std::chrono::steady_clock::now();
       if (_clusterMgr.clusters().size() >= static_cast<size_t>(_config.expectedPositions)) {
@@ -97,14 +94,14 @@ void SpinningMethod::updateClusters(float reading, SessionState &state) {
 }
 
 void SpinningMethod::finalizeCalibration(bool abort, float mergeThreshold) {
-  _diag->info("Calibration stopped.");
+  _diag.info("Calibration stopped.");
 
   _clusterMgr.mergeAndPrune(mergeThreshold, 2);
   if (!abort) {
-    _clusterMgr.diagnostics(*_diag);
+    _clusterMgr.diagnostics(_diag);
     saveCalibration();
   } else {
-    _diag->info("Calibration aborted. Previous data preserved.");
+    _diag.info("Calibration aborted. Previous data preserved.");
   }
 }
 
@@ -123,6 +120,6 @@ void SpinningMethod::processReading(float reading, SessionState &state) {
   updateClusters(reading, state);
 
   if (state.prevReading >= 0 && reading < state.prevReading)
-    _diag->warn("Warning: reverse rotation detected");
+    _diag.warn("Warning: reverse rotation detected");
   state.prevReading = reading;
 }
