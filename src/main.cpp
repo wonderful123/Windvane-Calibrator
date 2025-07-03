@@ -1,13 +1,13 @@
 #include <Arduino.h>
-#include <Menu/ArduinoMenu.h>
-#include <WindVane/Diagnostics/BufferedDiagnostics.h>
-#include <WindVane/Hardware/ESP32/ADC.h>
-#include <WindVane/IO/SerialIOHandler.h>
-#include <WindVane/IO/SerialOutput.h>
-#include <WindVane/Settings/FileSettingsStorage.h>
-#include <WindVane/Settings/SettingsData.h>
-#include <WindVane/Storage/EEPROMCalibrationStorage.h>
-#include <WindVane/WindVane.h>
+#include <ArduinoMenu.h>
+#include <Diagnostics/BufferedDiagnostics.h>
+#include <Hardware/ESP32/ADC.h>
+#include <IO/SerialIOHandler.h>
+#include <IO/SerialOutput.h>
+#include <Settings/FileSettingsStorage.h>
+#include <Settings/SettingsData.h>
+#include <Storage/EEPROMCalibrationStorage.h>
+#include <WindVane.h>
 
 #include <memory>
 
