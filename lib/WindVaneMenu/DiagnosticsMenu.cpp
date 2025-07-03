@@ -1,10 +1,8 @@
 #include "DiagnosticsMenu.h"
 #include <Platform/Platform.h>
 #include <UI/IIO.h>
-#ifndef ARDUINO
 #include <iostream>
 #include <limits>
-#endif
 
 DiagnosticsMenu::DiagnosticsMenu(WindVane* vane, IUserIO* io,
                                  IBufferedDiagnostics* buffered,
@@ -14,7 +12,6 @@ DiagnosticsMenu::DiagnosticsMenu(WindVane* vane, IUserIO* io,
       _platform(&platform) {}
 
 void DiagnosticsMenu::show(platform::TimeMs lastCalibration) const {
-#ifdef ARDUINO
     size_t index = 0;
     bool done = false;
     while (!done) {
@@ -22,9 +19,6 @@ void DiagnosticsMenu::show(platform::TimeMs lastCalibration) const {
         char c = readCharBlocking();
         handleAction(c, index, done);
     }
-#else
-    (void)lastCalibration;
-#endif
 }
 
 char DiagnosticsMenu::readCharBlocking() const {
@@ -34,7 +28,6 @@ char DiagnosticsMenu::readCharBlocking() const {
 }
 
 void DiagnosticsMenu::renderScreen(size_t index, platform::TimeMs lastCalibration) const {
-#ifdef ARDUINO
     char buf[32];
     _out->writeln("--- Diagnostics ---");
     _out->write("Calibration status: ");
@@ -55,9 +48,6 @@ void DiagnosticsMenu::renderScreen(size_t index, platform::TimeMs lastCalibratio
             _out->writeln(hist[index+i].c_str());
     }
     _out->writeln("[N]ext [P]rev [C]lear [T]est [B]ack");
-#else
-    (void)index; (void)lastCalibration;
-#endif
 }
 
 void DiagnosticsMenu::handleAction(char c, size_t &index, bool &exit) const {

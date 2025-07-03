@@ -2,51 +2,35 @@
 #include "Config.h"
 
 #include <Platform/Platform.h>
-#include <Storage/Settings/EEPROMSettingsStorage.h>
-#include <Storage/Settings/FileSettingsStorage.h>
+#include <UI/IOFactory.h>
 #include <Storage/Settings/SettingsManager.h>
-#include <Storage/EEPROMCalibrationStorage.h>
-#include <Storage/FileCalibrationStorage.h>
-#ifdef ARDUINO
-#include <Drivers/ESP32/ADC.h>
-#else
-#include "host/NullADC.h"
-#endif
+#include "PlatformFactory.h"
 
 DeviceConfig deviceCfg = defaultDeviceConfig();
 
-#ifdef ARDUINO
-ESP32ADC adc(deviceCfg.windVanePin);
 Platform platform;
-EEPROMCalibrationStorage calibStorage(platform, deviceCfg.calibrationAddress,
-                                      deviceCfg.eepromSize);
-EEPROMSettingsStorage settingsStorage(deviceCfg.settingsAddress,
-                                      deviceCfg.eepromSize);
-#else
-NullADC adc;
-Platform platform;
-FileCalibrationStorage calibStorage("calib.dat");
-FileSettingsStorage settingsStorage(deviceCfg.settingsFile);
-#endif
+auto adc = platform_factory::makeADC(deviceCfg);
+auto calibStorage = platform_factory::makeCalibrationStorage(platform, deviceCfg);
+auto settingsStorage = platform_factory::makeSettingsStorage(deviceCfg);
 
-PlatformIOHandler io;
-PlatformOutput out;
-PlatformDiagnosticsSink sink(&out);
+auto ioPtr = ui::makeDefaultIO();
+auto outPtr = ui::makeDefaultOutput();
+PlatformIOHandler& io = *ioPtr;
+PlatformOutput& out = *outPtr;
 PlatformDiagnostics diag;
+PlatformDiagnosticsSink sink(outPtr.get());
 diag.addSink(&sink);
-SettingsManager settingsMgr(settingsStorage, diag);
+SettingsManager settingsMgr(*settingsStorage, diag);
 
-WindVaneConfig vaneCfg{&adc, WindVaneType::REED_SWITCH,
-                       CalibrationMethod::SPINNING, &calibStorage, &io, &diag,
+WindVaneConfig vaneCfg{adc.get(), WindVaneType::REED_SWITCH,
+                       CalibrationMethod::SPINNING, calibStorage.get(), &io, &diag,
                        {}};
 WindVane vane(vaneCfg);
 
-App app(deviceCfg, vane, io, diag, out, calibStorage, settingsMgr, platform);
+App app(deviceCfg, vane, io, diag, out, *calibStorage, settingsMgr, platform);
 
 void setup() {
-#ifdef ARDUINO
-  Serial.begin(deviceCfg.serialBaud);
-#endif
+  ui::beginPlatformIO(deviceCfg.serialBaud);
   app.begin();
 }
 
