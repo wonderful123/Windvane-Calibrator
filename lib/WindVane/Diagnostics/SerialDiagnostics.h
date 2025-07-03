@@ -1,20 +1,19 @@
 #pragma once
-#include "IDiagnostics.h"
+#include "IDiagnosticsSink.h"
 #ifdef ARDUINO
 #include <Arduino.h>
 #endif
 
-class SerialDiagnostics : public IDiagnostics {
+class SerialDiagnostics : public IDiagnosticsSink {
 public:
-    void info(const char* msg) override {
+    void handle(const DiagnosticsEvent& ev) override {
 #ifdef ARDUINO
-        Serial.println(msg);
-#endif
-    }
-    void warn(const char* msg) override {
-#ifdef ARDUINO
-        Serial.println(msg);
+        const char* lvl = ev.level == LogLevel::Info ? "INFO" : "WARN";
+        char buf[128];
+        sprintf(buf, "[%lu] %s: %s", platform::toEmbedded(ev.timestamp), lvl, ev.message.c_str());
+        Serial.println(buf);
+#else
+        (void)ev;
 #endif
     }
 };
-

@@ -31,7 +31,9 @@ FileSettingsStorage settingsStorage(deviceCfg.settingsFile);
 
 PlatformIOHandler io;
 PlatformOutput out;
-PlatformDiagnostics diag(&out);
+PlatformDiagnosticsSink sink(&out);
+PlatformDiagnostics diag;
+diag.addSink(&sink);
 SettingsManager settingsMgr(settingsStorage, diag);
 
 WindVaneConfig vaneCfg{&adc, WindVaneType::REED_SWITCH,

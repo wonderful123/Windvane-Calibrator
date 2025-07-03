@@ -4,6 +4,7 @@
 
 #ifdef ARDUINO
 #include <Diagnostics/BasicDiagnostics.h>
+#include <Diagnostics/DiagnosticsBus.h>
 #include <UI/SerialIOHandler.h>
 #include <UI/SerialOutput.h>
 
@@ -20,11 +21,13 @@ public:
     bool supportsColor() const override { return false; }
 };
 using Platform = ArduinoPlatform;
-using PlatformDiagnostics = BasicDiagnostics;
+using PlatformDiagnostics = DiagnosticsBus;
+using PlatformDiagnosticsSink = BasicDiagnostics;
 using PlatformIOHandler = SerialIOHandler;
 using PlatformOutput = SerialOutput;
 #else
 #include <Diagnostics/BasicDiagnostics.h>
+#include <Diagnostics/DiagnosticsBus.h>
 #include <UI/ConsoleIOHandler.h>
 #include <UI/ConsoleOutput.h>
 #include <chrono>
@@ -46,7 +49,8 @@ public:
     bool supportsColor() const override { return true; }
 };
 using Platform = HostPlatform;
-using PlatformDiagnostics = BasicDiagnostics;
+using PlatformDiagnostics = DiagnosticsBus;
+using PlatformDiagnosticsSink = BasicDiagnostics;
 using PlatformIOHandler = ConsoleIOHandler;
 using PlatformOutput = ConsoleOutput;
 #endif

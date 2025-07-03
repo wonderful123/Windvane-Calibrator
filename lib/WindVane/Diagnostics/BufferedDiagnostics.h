@@ -1,4 +1,5 @@
 #pragma once
+#include "IDiagnosticsSink.h"
 #include "IDiagnostics.h"
 #include <deque>
 #include <string>
@@ -6,23 +7,22 @@
 #include <Arduino.h>
 #endif
 
-class BufferedDiagnostics : public IDiagnostics, public IBufferedDiagnostics {
+class BufferedDiagnostics : public IDiagnosticsSink, public IBufferedDiagnostics {
 public:
     explicit BufferedDiagnostics(size_t maxEntries = 10)
         : _maxEntries(maxEntries) {}
 
-    void info(const char* msg) override {
+    void handle(const DiagnosticsEvent& ev) override {
 #ifdef ARDUINO
-        Serial.println(msg);
+        const char* lvl = ev.level == LogLevel::Info ? "INFO" : "WARN";
+        char buf[128];
+        sprintf(buf, "[%lu] %s: %s", platform::toEmbedded(ev.timestamp), lvl, ev.message.c_str());
+        Serial.println(buf);
+        push(buf);
+#else
+        std::string lvl = ev.level == LogLevel::Info ? "INFO" : "WARN";
+        push("[" + std::to_string(platform::toEmbedded(ev.timestamp)) + "] " + lvl + ": " + ev.message);
 #endif
-        push("INFO: " + std::string(msg));
-    }
-
-    void warn(const char* msg) override {
-#ifdef ARDUINO
-        Serial.println(msg);
-#endif
-        push("WARN: " + std::string(msg));
     }
 
     const std::deque<std::string>& history() const override { return _messages; }
