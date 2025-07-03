@@ -7,16 +7,15 @@
 /** Manages loading, applying and saving device settings. */
 class SettingsManager {
 public:
-    SettingsManager(ISettingsStorage* storage, SettingsData* data, IDiagnostics* diag)
-        : _storage(storage), _data(data), _diag(diag) {}
+    SettingsManager(ISettingsStorage& storage, SettingsData& data, IDiagnostics& diag);
 
     bool load();
     void apply(WindVane& vane) const;
     void save() const;
 
-    SettingsData& data() { return *_data; }
+    SettingsData& data() { return _data; }
 private:
-    ISettingsStorage* _storage;
-    SettingsData* _data;
-    IDiagnostics* _diag;
+    ISettingsStorage& _storage;
+    SettingsData& _data;
+    IDiagnostics& _diag;
 };

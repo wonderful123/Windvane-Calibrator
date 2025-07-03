@@ -7,8 +7,7 @@
 #include "Calibration/CalibrationManager.h"
 #include "Calibration/CalibrationResult.h"
 #include "Calibration/CalibrationMethod.h"
-#include "Calibration/SpinningConfig.h"
-#include "Calibration/Strategies/ISpinningConfigurable.h"
+#include "Calibration/CalibrationConfig.h"
 #include "Diagnostics/IDiagnostics.h"
 #include "IADC.h"
 #include "UI/IIO.h"
@@ -32,7 +31,7 @@ struct WindVaneConfig {
   ICalibrationStorage *storage{};
   IUserIO *io{};
   IDiagnostics *diag{};
-  SpinningConfig config{};
+  CalibrationConfig config{};
 };
 
 class WindVane {
@@ -46,8 +45,8 @@ class WindVane {
   platform::TimeMs lastCalibrationTimestamp() const;
   CalibrationManager::CalibrationStatus calibrationStatus() const;
   void clearCalibration() const;
-  void setCalibrationConfig(const SpinningConfig &cfg);
-  SpinningConfig getCalibrationConfig() const;
+  void setCalibrationConfig(const CalibrationConfig &cfg);
+  CalibrationConfig getCalibrationConfig() const;
   ICalibrationStorage *storage() const { return _storage; }
 
  private:

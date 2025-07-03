@@ -9,7 +9,7 @@
 
 class ArduinoPlatform : public IPlatform {
 public:
-    platform::TimeMs millis() const override { return ::millis(); }
+    platform::TimeMs millis() const override { return platform::TimeMs{::millis()}; }
     void renderStatusLine(WindVaneMenuPresenter& presenter,
                           const WindVaneStatus& st,
                           const char* statusStr,
@@ -34,7 +34,7 @@ public:
     platform::TimeMs millis() const override {
         using namespace std::chrono;
         static auto start = steady_clock::now();
-        return duration_cast<milliseconds>(steady_clock::now() - start);
+        return platform::TimeMs{static_cast<platform::TimeMs::rep>(duration_cast<milliseconds>(steady_clock::now() - start).count())};
     }
     void renderStatusLine(WindVaneMenuPresenter& presenter,
                           const WindVaneStatus& st,

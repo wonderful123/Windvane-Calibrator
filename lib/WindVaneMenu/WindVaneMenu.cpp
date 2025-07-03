@@ -140,7 +140,7 @@ void WindVaneMenu::handleDiagnosticsSelection() {
 
 void WindVaneMenu::handleSettingsSelectionMenu() {
   pushState(State::Settings);
-  SettingsMenu menu(&_vane, &_io, &_storage, &_settingsMgr, &_out);
+  SettingsMenu menu(_vane, _io, _storage, _settingsMgr, _out);
   popState();
   showMainMenu();
 }

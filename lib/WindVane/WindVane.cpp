@@ -2,8 +2,8 @@
 
 #include "WindVane.h"
 
-#include "Calibration/Strategies/ISpinningConfigurable.h"
 #include "Calibration/StrategyFactory.h"
+#include "Calibration/CalibrationConfig.h"
 #include "Diagnostics/IDiagnostics.h"
 #include "UI/IIO.h"
 #include "Storage/ICalibrationStorage.h"
@@ -50,21 +50,15 @@ void WindVane::clearCalibration() const {
   if (_storage) _storage->clear();
 }
 
-void WindVane::setCalibrationConfig(const SpinningConfig& cfg) {
+void WindVane::setCalibrationConfig(const CalibrationConfig& cfg) {
   if (_calibrationManager) {
-    ICalibrationStrategy* strat = _calibrationManager->strategy();
-    if (strat->strategyType() == CalibrationStrategyType::Spinning) {
-      reinterpret_cast<ISpinningConfigurable*>(strat)->setConfig(cfg);
-    }
+    _calibrationManager->strategy()->setConfig(cfg);
   }
 }
 
-SpinningConfig WindVane::getCalibrationConfig() const {
+CalibrationConfig WindVane::getCalibrationConfig() const {
   if (_calibrationManager) {
-    ICalibrationStrategy* strat = _calibrationManager->strategy();
-    if (strat->strategyType() == CalibrationStrategyType::Spinning) {
-      return reinterpret_cast<ISpinningConfigurable*>(strat)->config();
-    }
+    return _calibrationManager->strategy()->config();
   }
-  return {};
+  return CalibrationConfig{};
 }

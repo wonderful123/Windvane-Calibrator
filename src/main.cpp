@@ -34,7 +34,7 @@ PlatformIOHandler io;
 PlatformOutput out;
 PlatformDiagnostics diag(&out);
 SettingsData settings;
-SettingsManager settingsMgr(&settingsStorage, &settings, &diag);
+SettingsManager settingsMgr(settingsStorage, settings, diag);
 
 WindVaneConfig vaneCfg{&adc, WindVaneType::REED_SWITCH,
                        CalibrationMethod::SPINNING, &calibStorage, &io, &diag,

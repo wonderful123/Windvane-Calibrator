@@ -6,8 +6,8 @@
 
 class SettingsMenu {
  public:
-  SettingsMenu(WindVane* vane, IUserIO* io, ICalibrationStorage* calibStorage,
-               SettingsManager* settingsMgr, IOutput* out);
+  SettingsMenu(WindVane& vane, IUserIO& io, ICalibrationStorage& calibStorage,
+               SettingsManager& settingsMgr, IOutput& out);
 
   void run() const;
 
@@ -15,9 +15,9 @@ class SettingsMenu {
   int readInt() const;
 
  private:
-  WindVane* _vane;
-  IUserIO* _io;
-  ICalibrationStorage* _storage;
-  SettingsManager* _settingsMgr;
-  IOutput* _out;
+  WindVane& _vane;
+  IUserIO& _io;
+  ICalibrationStorage& _storage;
+  SettingsManager& _settingsMgr;
+  IOutput& _out;
 };

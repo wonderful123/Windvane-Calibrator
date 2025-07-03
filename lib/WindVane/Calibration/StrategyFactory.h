@@ -1,7 +1,7 @@
 #pragma once
 #include "CalibrationMethod.h"
 #include "Strategies/ICalibrationStrategy.h"
-#include "SpinningConfig.h"
+#include "CalibrationConfig.h"
 #include "../IADC.h"
 #include "../Storage/ICalibrationStorage.h"
 #include "../Diagnostics/IDiagnostics.h"
@@ -12,7 +12,7 @@ struct StrategyContext {
     IADC *adc{};
     ICalibrationStorage *storage{};
     IDiagnostics *diag{};
-    SpinningConfig config{};
+    CalibrationConfig config{};
 };
 
 std::unique_ptr<ICalibrationStrategy> createCalibrationStrategy(

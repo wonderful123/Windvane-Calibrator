@@ -1,25 +1,26 @@
 #include "SettingsManager.h"
+#include <Calibration/CalibrationConfig.h>
+
+SettingsManager::SettingsManager(ISettingsStorage& storage, SettingsData& data,
+                                 IDiagnostics& diag)
+    : _storage(storage), _data(data), _diag(diag) {}
 
 bool SettingsManager::load() {
-    if (_storage && _data) {
-        if (_storage->load(*_data)) {
-            if (_diag) _diag->info("Settings loaded");
-            return true;
-        } else {
-            if (_diag) _diag->warn("Failed to load settings; using defaults");
-        }
+    if (_storage.load(_data)) {
+        _diag.info("Settings loaded");
+        return true;
     }
+    _diag.warn("Failed to load settings; using defaults");
     return false;
 }
 
 void SettingsManager::apply(WindVane& vane) const {
-    if (_data)
-        vane.setCalibrationConfig(_data->spin);
+    CalibrationConfig cfg{};
+    cfg.spin = _data.spin;
+    vane.setCalibrationConfig(cfg);
 }
 
 void SettingsManager::save() const {
-    if (_storage && _data) {
-        _storage->save(*_data);
-        if (_diag) _diag->info("Settings saved");
-    }
+    _storage.save(_data);
+    _diag.info("Settings saved");
 }
