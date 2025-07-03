@@ -2,7 +2,7 @@
 #include <Diagnostics/IBufferedDiagnostics.h>
 #include <Diagnostics/IDiagnostics.h>
 #include <IO/IIOHandler.h>
-#include <IO/INumericReader.h>  // <-- ADD THIS INCLUDE
+#include <IO/INumericReader.h>
 #include <IO/IOutput.h>
 #include <Settings/ISettingsStorage.h>
 #include <Settings/SettingsData.h>
@@ -14,16 +14,18 @@
 
 #include <string>
 
+/** Dependencies required by the menu. All references are borrowed and must
+ * outlive the menu instance. */
 struct WindVaneMenuConfig {
-  WindVane* vane{};
-  IIOHandler* io{};
-  IDiagnostics* diag{};
-  IBufferedDiagnostics* bufferedDiag{};
-  IOutput* out{};
-  ICalibrationStorage* storage{};
-  ISettingsStorage* settingsStorage{};
-  SettingsData* settings{};
-  INumericReader* numeric{};  // <-- ADD TO CONFIG, pass to SettingsMenu
+  WindVane& vane;
+  IIOHandler& io;
+  IDiagnostics& diag;
+  IBufferedDiagnostics* bufferedDiag;
+  IOutput& out;
+  ICalibrationStorage& storage;
+  ISettingsStorage& settingsStorage;
+  SettingsData& settings;
+  INumericReader& numeric;
 };
 
 class WindVaneMenu {
@@ -33,15 +35,15 @@ class WindVaneMenu {
   void update();
 
  private:
-  WindVane* _vane;
-  IIOHandler* _io;
-  IDiagnostics* _diag;
+  WindVane& _vane;
+  IIOHandler& _io;
+  IDiagnostics& _diag;
   IBufferedDiagnostics* _buffered;
-  IOutput* _out;
-  ICalibrationStorage* _storage;
-  ISettingsStorage* _settingsStorage;
-  SettingsData* _settings;
-  INumericReader* _numeric;  // <-- DECLARE _numeric
+  IOutput& _out;
+  ICalibrationStorage& _storage;
+  ISettingsStorage& _settingsStorage;
+  SettingsData& _settings;
+  INumericReader& _numeric;
 
   WindVaneMenuLogic _logic;
   WindVaneMenuPresenter _presenter;

@@ -1,6 +1,8 @@
 #include "App.h"
 
 #include <Diagnostics/SerialDiagnostics.h>
+#include <IO/SerialOutput.h>
+#include <IO/ConsoleOutput.h>
 #include <IO/SerialIOHandler.h>
 #include <Settings/EEPROMSettingsStorage.h>
 #include <Settings/FileSettingsStorage.h>
@@ -13,6 +15,11 @@ App::App(const DeviceConfig& config)
 
 void App::begin() {
   static SerialIOHandler io;
+#ifdef ARDUINO
+  static SerialOutput out;
+#else
+  static ConsoleOutput out;
+#endif
   static SerialDiagnostics diag;
 
 #ifdef ARDUINO
@@ -26,18 +33,9 @@ void App::begin() {
 #endif
   static SettingsData settings;
 
-  WindVaneMenuConfig menuCfg;
-  menuCfg.vane = &vane;
-  menuCfg.io = &io;
-  menuCfg.diag = &diag;
-  menuCfg.bufferedDiag = nullptr;
-  menuCfg.out = nullptr;
-  menuCfg.storage = &storage;
-  menuCfg.settingsStorage = &settingsStorage;
-  menuCfg.settings = &settings;
-  menuCfg.numeric = &io;
+  WindVaneMenuConfig menuCfg{vane, io, diag, nullptr, out, storage, settingsStorage, settings, io};
 
-  menu = new WindVaneMenu(menuCfg);
+  menu = std::make_unique<WindVaneMenu>(menuCfg);
   menu->begin();
 }
 

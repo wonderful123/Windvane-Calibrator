@@ -1,8 +1,9 @@
 #pragma once
 #include <WindVane.h>
+#include <memory>
 #include <WindVaneMenu.h>
 
-#include "Config.h"  // Add this include
+#include "Config.h"
 
 class App {
  public:
@@ -14,5 +15,5 @@ class App {
  private:
   const DeviceConfig& cfg;
   WindVane vane;
-  WindVaneMenu* menu;
+  std::unique_ptr<WindVaneMenu> menu;
 };
