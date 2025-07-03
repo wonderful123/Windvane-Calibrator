@@ -70,6 +70,13 @@ public:
   /// Returns the current calibration status
   CalibrationManager::CalibrationStatus calibrationStatus() const;
 
+  void clearCalibration();
+
+  void setCalibrationConfig(const SpinningConfig &cfg);
+  SpinningConfig getCalibrationConfig() const;
+
+  ICalibrationStorage* storage() const { return _storage; }
+
 private:
   /**
    * @brief Gets the raw wind direction from the ADC interface.

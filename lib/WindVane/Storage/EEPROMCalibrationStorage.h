@@ -1,5 +1,6 @@
 #pragma once
 #include "ICalibrationStorage.h"
+#include <cstdint>
 #ifdef ARDUINO
 #include <EEPROM.h>
 #endif
@@ -10,6 +11,7 @@ public:
     void save(const std::vector<ClusterData>& clusters, int version) override;
     bool load(std::vector<ClusterData>& clusters, int &version) override;
     uint32_t lastTimestamp() const { return _lastTimestamp; }
+    void clear() override;
 
 private:
     size_t _startAddress;

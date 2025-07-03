@@ -27,6 +27,8 @@ public:
 
     const std::deque<std::string>& history() const { return _messages; }
 
+    void clear() { _messages.clear(); }
+
 private:
     size_t _max;
     std::deque<std::string> _messages;

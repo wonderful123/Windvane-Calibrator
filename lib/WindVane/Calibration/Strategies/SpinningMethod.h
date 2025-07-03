@@ -33,6 +33,9 @@ public:
   // Map a raw ADC reading to a calibrated direction in degrees
   float mapReading(float reading) const override;
 
+  const SpinningConfig& config() const { return _config; }
+  void setConfig(const SpinningConfig& cfg) { _config = cfg; }
+
   static constexpr int CALIBRATION_VERSION = 1;
 
 private:

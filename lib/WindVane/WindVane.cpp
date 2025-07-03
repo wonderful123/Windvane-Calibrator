@@ -3,6 +3,7 @@
 #include "Storage/ICalibrationStorage.h"
 #include "IO/IIOHandler.h"
 #include "Diagnostics/IDiagnostics.h"
+#include "Calibration/Strategies/SpinningMethod.h"
 
 WindVane::WindVane(IADC *adc, WindVaneType type,
                    CalibrationMethod method,
@@ -36,4 +37,28 @@ CalibrationManager::CalibrationStatus WindVane::calibrationStatus() const {
 
 uint32_t WindVane::lastCalibrationTimestamp() const {
     return _storage ? _storage->lastTimestamp() : 0;
+}
+
+void WindVane::clearCalibration() {
+    if (_storage)
+        _storage->clear();
+}
+
+void WindVane::setCalibrationConfig(const SpinningConfig &cfg) {
+    if (_calibrationManager) {
+        auto strat = dynamic_cast<SpinningMethod*>(
+            _calibrationManager->strategy());
+        if (strat)
+            strat->setConfig(cfg);
+    }
+}
+
+SpinningConfig WindVane::getCalibrationConfig() const {
+    if (_calibrationManager) {
+        auto strat = dynamic_cast<SpinningMethod*>(
+            _calibrationManager->strategy());
+        if (strat)
+            return strat->config();
+    }
+    return {};
 }

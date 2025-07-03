@@ -35,3 +35,9 @@ bool FileCalibrationStorage::load(std::vector<ClusterData>& clusters, int &versi
     }
     return true;
 }
+
+void FileCalibrationStorage::clear() {
+    std::error_code ec;
+    std::filesystem::remove(_path, ec);
+    _lastTimestamp = 0;
+}
