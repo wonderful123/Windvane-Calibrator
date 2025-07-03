@@ -3,7 +3,7 @@
 #include "DiagnosticsMenu.h"
 #include "SettingsMenu.h"
 #include "WindVaneCompass.h"
-#include "WindVaneMenuDisplayController.h"
+#include "MenuDisplayController.h"
 #include <Calibration/CalibrationResult.h>
 #include <Platform/Platform.h>
 #include <Platform/IPlatform.h>

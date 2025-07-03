@@ -2,7 +2,7 @@
 
 #include "WindVane.h"
 
-#include "Calibration/StrategyFactory.h"
+#include "Calibration/Strategies/StrategyFactory.h"
 #include "Calibration/CalibrationConfig.h"
 #include "Diagnostics/IDiagnostics.h"
 #include "UI/IIO.h"

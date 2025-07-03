@@ -1,10 +1,10 @@
 #pragma once
-#include "CalibrationMethod.h"
-#include "Strategies/ICalibrationStrategy.h"
-#include "CalibrationConfig.h"
-#include "../IADC.h"
-#include "../Storage/ICalibrationStorage.h"
-#include "../Diagnostics/IDiagnostics.h"
+#include "../CalibrationMethod.h"
+#include "ICalibrationStrategy.h"
+#include "../CalibrationConfig.h"
+#include "../../IADC.h"
+#include "../../Storage/ICalibrationStorage.h"
+#include "../../Diagnostics/IDiagnostics.h"
 #include <memory>
 
 struct StrategyContext {

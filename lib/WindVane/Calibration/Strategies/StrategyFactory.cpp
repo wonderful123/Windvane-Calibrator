@@ -1,5 +1,5 @@
 #include "StrategyFactory.h"
-#include "Strategies/SpinningMethod.h"
+#include "SpinningMethod.h"
 
 std::unique_ptr<ICalibrationStrategy> createCalibrationStrategy(
     const StrategyContext &ctx) {

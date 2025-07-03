@@ -1,8 +1,8 @@
-#include "WindVaneMenuPresenter.h"
+#include "MenuPresenter.h"
 #include "WindVaneCompass.h"
 #include <cstdio>
 
-void WindVaneMenuPresenter::renderStatusLine(const WindVaneStatus& st,
+void MenuPresenter::renderStatusLine(const WindVaneStatus& st,
                                              const char* statusStr,
                                              const std::string& msg,
                                              MenuStatusLevel level,

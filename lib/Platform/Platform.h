@@ -1,6 +1,6 @@
 #pragma once
 #include "IPlatform.h"
-#include <WindVaneMenu/WindVaneMenuPresenter.h>
+#include <WindVaneMenu/MenuPresenter.h>
 
 #ifdef ARDUINO
 #include <Diagnostics/BasicDiagnostics.h>
@@ -11,7 +11,7 @@
 class ArduinoPlatform : public IPlatform {
 public:
     platform::TimeMs millis() const override { return platform::TimeMs{::millis()}; }
-    void renderStatusLine(WindVaneMenuPresenter& presenter,
+    void renderStatusLine(MenuPresenter& presenter,
                           const WindVaneStatus& st,
                           const char* statusStr,
                           const std::string& msg,
@@ -39,7 +39,7 @@ public:
         static auto start = steady_clock::now();
         return platform::TimeMs{static_cast<platform::TimeMs::rep>(duration_cast<milliseconds>(steady_clock::now() - start).count())};
     }
-    void renderStatusLine(WindVaneMenuPresenter& presenter,
+    void renderStatusLine(MenuPresenter& presenter,
                           const WindVaneStatus& st,
                           const char* statusStr,
                           const std::string& msg,

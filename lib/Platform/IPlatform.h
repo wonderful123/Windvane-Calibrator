@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 #include "TimeUtils.h"
-class WindVaneMenuPresenter;
+class MenuPresenter;
 struct WindVaneStatus;
 enum class MenuStatusLevel;
 
@@ -9,7 +9,7 @@ class IPlatform {
 public:
     virtual ~IPlatform() = default;
     virtual platform::TimeMs millis() const = 0;
-    virtual void renderStatusLine(WindVaneMenuPresenter& presenter,
+    virtual void renderStatusLine(MenuPresenter& presenter,
                                   const WindVaneStatus& st,
                                   const char* statusStr,
                                   const std::string& msg,

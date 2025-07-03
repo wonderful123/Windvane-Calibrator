@@ -3,10 +3,10 @@
 #include <UI/IIO.h>
 #include <Storage/ICalibrationStorage.h>
 #include <WindVane.h>
-#include "WindVaneMenuLogic.h"
-#include "WindVaneMenuPresenter.h"
-#include "WindVaneMenuDisplayController.h"
-#include "WindVaneMenuTypes.h"
+#include "MenuLogic.h"
+#include "MenuPresenter.h"
+#include "MenuDisplayController.h"
+#include "MenuTypes.h"
 #include <Platform/IPlatform.h>
 #include <Storage/Settings/SettingsManager.h>
 #include <string>
@@ -43,9 +43,9 @@ class WindVaneMenu {
   SettingsManager& _settingsMgr;
   IPlatform& _platform;
 
-  WindVaneMenuLogic _logic;
-  WindVaneMenuPresenter _presenter;
-  WindVaneMenuDisplayController _display;
+  MenuLogic _logic;
+  MenuPresenter _presenter;
+  MenuDisplayController _display;
   enum class State {
     Main,
     LiveDisplay,
