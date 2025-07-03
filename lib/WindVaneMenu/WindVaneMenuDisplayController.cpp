@@ -26,7 +26,7 @@ bool WindVaneMenuDisplayController::checkTimeout() const {
     return _platform.millis() - _lastActivity > platform::TimeMs{30000};
 }
 
-bool WindVaneMenuDisplayController::updateLiveDisplay(WindVane& vane) {
+bool WindVaneMenuDisplayController::updateLiveDisplay(WindVane& vane) const {
     static platform::TimeMs last = platform::TimeMs{0};
     if (_platform.millis() - last > platform::TimeMs{1000}) {
         last = _platform.millis();

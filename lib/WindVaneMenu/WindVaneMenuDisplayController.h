@@ -14,7 +14,7 @@ public:
                                   WindVaneMenuLogic& logic);
     void begin(WindVane& vane);
     void onInput();
-    bool updateLiveDisplay(WindVane& vane);
+    bool updateLiveDisplay(WindVane& vane) const;
     bool checkTimeout() const;
     void showStatusLine(WindVane& vane);
     void setStatusMessage(const char* msg,

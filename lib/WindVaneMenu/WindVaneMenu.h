@@ -57,7 +57,7 @@ class WindVaneMenu {
   std::vector<State> _stateStack;
   std::unordered_map<char, std::function<void()>> _mainHandlers;
 
-  void showMainMenu();
+  void showMainMenu() const;
   void handleMainInput(char c);
 
   void runCalibration();
@@ -67,8 +67,8 @@ class WindVaneMenu {
   void handleSettingsSelectionMenu();
   void handleHelpSelection();
   void handleUnknownSelection();
-  void showHelp();
-  void clearScreen();
+  void showHelp() const;
+  void clearScreen() const;
   void pushState(State s);
   void popState();
   State currentState() const;

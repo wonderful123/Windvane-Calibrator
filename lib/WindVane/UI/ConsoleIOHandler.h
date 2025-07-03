@@ -8,21 +8,21 @@
 
 class ConsoleIOHandler : public IUserIO {
 public:
-    bool hasInput() override {
+    bool hasInput() const override {
         return std::cin.rdbuf()->in_avail();
     }
-    char readInput() override {
+    char readInput() const override {
         char c;
         std::cin.get(c);
         return c;
     }
-    void flushInput() override {
+    void flushInput() const override {
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     }
-    void waitMs(platform::TimeMs ms) override {
+    void waitMs(platform::TimeMs ms) const override {
         std::this_thread::sleep_for(platform::toChrono(ms));
     }
-    bool yesNoPrompt(const char* prompt) override {
+    bool yesNoPrompt(const char* prompt) const override {
         std::cout << prompt << std::endl;
         char c;
         std::cin >> c;
@@ -30,14 +30,14 @@ public:
         return c == 'y' || c == 'Y';
     }
 
-    float readFloat() override {
+    float readFloat() const override {
         float v;
         std::cin >> v;
         flushInput();
         return v;
     }
 
-    int readInt() override {
+    int readInt() const override {
         int v;
         std::cin >> v;
         flushInput();

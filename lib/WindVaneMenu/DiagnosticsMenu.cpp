@@ -13,7 +13,7 @@ DiagnosticsMenu::DiagnosticsMenu(WindVane* vane, IUserIO* io,
     : _vane(vane), _io(io), _buffered(buffered), _diag(diag), _out(out),
       _platform(&platform) {}
 
-void DiagnosticsMenu::show(platform::TimeMs lastCalibration) {
+void DiagnosticsMenu::show(platform::TimeMs lastCalibration) const {
 #ifdef ARDUINO
     size_t index = 0;
     bool done = false;
@@ -27,13 +27,13 @@ void DiagnosticsMenu::show(platform::TimeMs lastCalibration) {
 #endif
 }
 
-char DiagnosticsMenu::readCharBlocking() {
+char DiagnosticsMenu::readCharBlocking() const {
     while (!_io->hasInput())
         _io->waitMs(10);
     return _io->readInput();
 }
 
-void DiagnosticsMenu::renderScreen(size_t index, platform::TimeMs lastCalibration) {
+void DiagnosticsMenu::renderScreen(size_t index, platform::TimeMs lastCalibration) const {
 #ifdef ARDUINO
     char buf[32];
     _out->writeln("--- Diagnostics ---");
@@ -60,7 +60,7 @@ void DiagnosticsMenu::renderScreen(size_t index, platform::TimeMs lastCalibratio
 #endif
 }
 
-void DiagnosticsMenu::handleAction(char c, size_t &index, bool &exit) {
+void DiagnosticsMenu::handleAction(char c, size_t &index, bool &exit) const {
     if (c=='N'||c=='n') {
         if (_buffered && index+5<_buffered->history().size()) index+=5;
     } else if (c=='P'||c=='p') {
@@ -77,7 +77,7 @@ void DiagnosticsMenu::handleAction(char c, size_t &index, bool &exit) {
     }
 }
 
-void DiagnosticsMenu::selfTest() {
+void DiagnosticsMenu::selfTest() const {
     bool ok = true;
     float d = _vane->direction();
     if (d < 0 || d >= 360) ok = false;

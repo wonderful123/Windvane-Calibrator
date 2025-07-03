@@ -6,4 +6,4 @@
   #include "Arduino.h"
 #endif
 
-float ESP32ADC::read() { return analogRead(_pin); }
+float ESP32ADC::read() const { return analogRead(_pin); }

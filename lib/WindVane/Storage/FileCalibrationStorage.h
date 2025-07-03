@@ -23,8 +23,8 @@ private:
     uint32_t _lastTimestamp{0};
 
     void backupExisting() const;
-    void writeHeader(std::ofstream& ofs, int version);
-    void writeClusters(std::ofstream& ofs, const std::vector<ClusterData>& clusters);
+    void writeHeader(std::ofstream& ofs, int version) const;
+    void writeClusters(std::ofstream& ofs, const std::vector<ClusterData>& clusters) const;
     bool readHeader(std::ifstream& ifs, int& version);
-    void readClusters(std::ifstream& ifs, std::vector<ClusterData>& clusters);
+    void readClusters(std::ifstream& ifs, std::vector<ClusterData>& clusters) const;
 };

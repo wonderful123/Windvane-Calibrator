@@ -9,12 +9,12 @@
 
 class ArduinoPlatform : public IPlatform {
 public:
-    platform::TimeMs millis() override { return ::millis(); }
+    platform::TimeMs millis() const override { return ::millis(); }
     void renderStatusLine(WindVaneMenuPresenter& presenter,
                           const WindVaneStatus& st,
                           const char* statusStr,
                           const std::string& msg,
-                          MenuStatusLevel level) override {
+                          MenuStatusLevel level) const override {
         presenter.renderStatusLine(st, statusStr, msg, level, supportsColor());
     }
     bool supportsColor() const override { return false; }
@@ -31,7 +31,7 @@ using PlatformOutput = SerialOutput;
 
 class HostPlatform : public IPlatform {
 public:
-    platform::TimeMs millis() override {
+    platform::TimeMs millis() const override {
         using namespace std::chrono;
         static auto start = steady_clock::now();
         return duration_cast<milliseconds>(steady_clock::now() - start);
@@ -40,7 +40,7 @@ public:
                           const WindVaneStatus& st,
                           const char* statusStr,
                           const std::string& msg,
-                          MenuStatusLevel level) override {
+                          MenuStatusLevel level) const override {
         presenter.renderStatusLine(st, statusStr, msg, level, supportsColor());
     }
     bool supportsColor() const override { return true; }

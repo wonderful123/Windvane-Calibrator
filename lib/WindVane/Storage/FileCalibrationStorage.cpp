@@ -60,11 +60,11 @@ void FileCalibrationStorage::backupExisting() const {
     }
 }
 
-void FileCalibrationStorage::writeHeader(std::ofstream& ofs, int version) {
+void FileCalibrationStorage::writeHeader(std::ofstream& ofs, int version) const {
     ofs << version << " " << _lastTimestamp << "\n";
 }
 
-void FileCalibrationStorage::writeClusters(std::ofstream& ofs, const std::vector<ClusterData>& clusters) {
+void FileCalibrationStorage::writeClusters(std::ofstream& ofs, const std::vector<ClusterData>& clusters) const {
     for (const auto& c : clusters) {
         ofs << c.mean << " " << c.min << " " << c.max << " " << c.count << "\n";
     }
@@ -78,7 +78,7 @@ bool FileCalibrationStorage::readHeader(std::ifstream& ifs, int& version) {
     return true;
 }
 
-void FileCalibrationStorage::readClusters(std::ifstream& ifs, std::vector<ClusterData>& clusters) {
+void FileCalibrationStorage::readClusters(std::ifstream& ifs, std::vector<ClusterData>& clusters) const {
     ClusterData c{};
     while (ifs >> c.mean >> c.min >> c.max >> c.count) {
         clusters.push_back(c);

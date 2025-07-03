@@ -10,7 +10,7 @@ SettingsMenu::SettingsMenu(WindVane* vane, IUserIO* io,
       _settingsMgr(settingsMgr),
       _out(out) {}
 
-void SettingsMenu::run() {
+void SettingsMenu::run() const {
   _out->writeln("--- Settings Menu ---");
   _out->writeln("1. Change buffer size");
   _out->writeln("2. Save settings");
@@ -29,8 +29,8 @@ void SettingsMenu::run() {
   }
 }
 
-float SettingsMenu::readFloat() {
+float SettingsMenu::readFloat() const {
   return _io ? _io->readFloat() : 0.0f;
 }
 
-int SettingsMenu::readInt() { return _io ? _io->readInt() : 0; }
+int SettingsMenu::readInt() const { return _io ? _io->readInt() : 0; }

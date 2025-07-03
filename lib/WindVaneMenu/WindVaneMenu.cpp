@@ -63,7 +63,7 @@ void WindVaneMenu::update() {
   _display.showStatusLine(_vane);
 }
 
-void WindVaneMenu::showMainMenu() {
+void WindVaneMenu::showMainMenu() const {
   clearScreen();
   _out.writeln("");
   _out.writeln("=== Wind Vane Menu ===");
@@ -147,7 +147,7 @@ void WindVaneMenu::handleUnknownSelection() {
                             MenuStatusLevel::Error);
 }
 
-void WindVaneMenu::showHelp() {
+void WindVaneMenu::showHelp() const {
   _out.writeln("--- Help ---");
   _out.writeln("D: Live wind direction display");
   _out.writeln("C: Start calibration routine");
@@ -156,7 +156,7 @@ void WindVaneMenu::showHelp() {
   _out.writeln("H: Show this help text");
 }
 
-void WindVaneMenu::clearScreen() { _out.clear(); }
+void WindVaneMenu::clearScreen() const { _out.clear(); }
 
 void WindVaneMenu::pushState(State s) { _stateStack.push_back(s); }
 

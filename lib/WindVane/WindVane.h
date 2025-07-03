@@ -40,18 +40,18 @@ class WindVane {
   // All dependencies must be provided via the configuration structure
   explicit WindVane(const WindVaneConfig &cfg);
 
-  float direction();
+  float direction() const;
   CalibrationResult calibrate();       // New: simple method alias for runCalibration()
   CalibrationResult runCalibration();  // Advanced
   platform::TimeMs lastCalibrationTimestamp() const;
   CalibrationManager::CalibrationStatus calibrationStatus() const;
-  void clearCalibration();
+  void clearCalibration() const;
   void setCalibrationConfig(const SpinningConfig &cfg);
   SpinningConfig getCalibrationConfig() const;
   ICalibrationStorage *storage() const { return _storage; }
 
  private:
-  float getRawDirection();
+  float getRawDirection() const;
   IADC *_adc;
   WindVaneType _type;
   std::unique_ptr<CalibrationManager> _calibrationManager;

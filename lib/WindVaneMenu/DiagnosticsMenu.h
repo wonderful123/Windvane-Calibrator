@@ -9,7 +9,7 @@ public:
     DiagnosticsMenu(WindVane* vane, IUserIO* io,
                     IBufferedDiagnostics* buffered, IDiagnostics* diag,
                     IOutput* out, IPlatform& platform);
-    void show(platform::TimeMs lastCalibration);
+    void show(platform::TimeMs lastCalibration) const;
 private:
     WindVane* _vane;
     IUserIO* _io;
@@ -18,8 +18,8 @@ private:
     IOutput* _out;
     IPlatform* _platform;
 
-    char readCharBlocking();
-    void renderScreen(size_t index, platform::TimeMs lastCalibration);
-    void handleAction(char c, size_t &index, bool &exit);
-    void selfTest();
+    char readCharBlocking() const;
+    void renderScreen(size_t index, platform::TimeMs lastCalibration) const;
+    void handleAction(char c, size_t &index, bool &exit) const;
+    void selfTest() const;
 };
