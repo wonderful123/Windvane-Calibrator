@@ -6,6 +6,7 @@
 #include <chrono>
 #include <iostream>
 #include <limits>
+#include <cstdio>
 using std::cout; using std::endl;
 static unsigned long millis() {
     using namespace std::chrono;
@@ -71,46 +72,56 @@ void ArduinoMenu::showStatusLine() {
         case CalibrationManager::CalibrationStatus::Completed: statusStr = "OK"; break;
     }
 #ifdef ARDUINO
-    Serial.print("\rDir: ");
-    Serial.print(dir,1);
-    Serial.print("\xC2\xB0 (");
-    Serial.print(compassPoint(dir));
-    Serial.print(") Status: ");
-    Serial.print(statusStr);
-    Serial.print(" Cal: ");
-    Serial.print(ago);
+    char line[80];
+    snprintf(line, sizeof(line), "\rDir:%6.1f\xC2\xB0 %-2s Status:%-10s Cal:%4lum", dir,
+             compassPoint(dir), statusStr, ago);
+    Serial.print(line);
     if (!_statusMsg.empty() && millis() < _msgExpiry) {
-        Serial.print(" ");
+        if (_statusLevel != StatusLevel::Normal) Serial.print(" !! ");
         Serial.print(_statusMsg.c_str());
     }
-    Serial.print("m    \r");
-    if (!_statusMsg.empty() && millis() >= _msgExpiry) _statusMsg.clear();
+    Serial.print("    \r");
+    if (!_statusMsg.empty() && millis() >= _msgExpiry) {
+        _statusMsg.clear();
+        _statusLevel = StatusLevel::Normal;
+    }
 #else
-    cout << "\rDir: " << dir << "\xC2\xB0 (" << compassPoint(dir) << ") Status: " << statusStr
-         << " Cal: " << ago;
-    if (!_statusMsg.empty() && millis() < _msgExpiry)
-        cout << " " << _statusMsg.c_str();
-    cout << "m    \r" << std::flush;
-    if (!_statusMsg.empty() && millis() >= _msgExpiry) _statusMsg.clear();
+    char line[80];
+    snprintf(line, sizeof(line), "\rDir:%6.1f\xC2\xB0 %-2s Status:%-10s Cal:%4lum", dir,
+             compassPoint(dir), statusStr, ago);
+    std::cout << line;
+    if (!_statusMsg.empty() && millis() < _msgExpiry) {
+        const char* color=""; const char* reset="";
+        if (_statusLevel == StatusLevel::Warning) { color="\033[33m"; reset="\033[0m"; }
+        else if (_statusLevel == StatusLevel::Error) { color="\033[31m"; reset="\033[0m"; }
+        std::cout << " " << color << _statusMsg << reset;
+    }
+    std::cout << "    \r" << std::flush;
+    if (!_statusMsg.empty() && millis() >= _msgExpiry) {
+        _statusMsg.clear();
+        _statusLevel = StatusLevel::Normal;
+    }
 #endif
 }
 
 void ArduinoMenu::showMainMenu() {
 #ifdef ARDUINO
+    clearScreen();
     Serial.println();
     Serial.println("=== Wind Vane Menu ===");
-    Serial.println("[D] Display direction");
-    Serial.println("[C] Calibrate" );
-    Serial.println("[G] Diagnostics" );
-    Serial.println("[S] Settings" );
-    Serial.println("[H] Help" );
+    Serial.println("[D] Display direction ");
+    Serial.println("[C] Calibrate        ");
+    Serial.println("[G] Diagnostics      ");
+    Serial.println("[S] Settings         ");
+    Serial.println("[H] Help             ");
 #else
+    clearScreen();
     cout << "\n=== Wind Vane Menu ===" << endl;
-    cout << "[D] Display direction" << endl;
-    cout << "[C] Calibrate" << endl;
-    cout << "[G] Diagnostics" << endl;
-    cout << "[S] Settings" << endl;
-    cout << "[H] Help" << endl;
+    cout << "[D] Display direction " << endl;
+    cout << "[C] Calibrate        " << endl;
+    cout << "[G] Diagnostics      " << endl;
+    cout << "[S] Settings         " << endl;
+    cout << "[H] Help             " << endl;
     cout << "Choose option: " << endl;
 #endif
 }
@@ -121,7 +132,7 @@ void ArduinoMenu::handleMainInput(char c) {
         case 'D': case 'd':
             _state = State::LiveDisplay;
             if (_vane->calibrationStatus() != CalibrationManager::CalibrationStatus::Completed)
-                setStatusMessage("Warning: uncalibrated");
+                setStatusMessage("Warning: uncalibrated", StatusLevel::Warning);
 #ifdef ARDUINO
             Serial.println("Live direction - press any key to return");
 #else
@@ -153,7 +164,7 @@ void ArduinoMenu::handleMainInput(char c) {
             showMainMenu();
             break;
         default:
-            setStatusMessage("Unknown option. Press [H] for help.");
+            setStatusMessage("Unknown option. Press [H] for help.", StatusLevel::Error);
             break;
     }
 }
@@ -186,6 +197,7 @@ void ArduinoMenu::runCalibration() {
         _lastCalibration = millis();
         if (_buffered)
             _buffered->info("Calibration completed");
+        setStatusMessage("Calibration complete", StatusLevel::Normal);
     }
 }
 
@@ -269,8 +281,17 @@ void ArduinoMenu::showHelp() {
 #endif
 }
 
-void ArduinoMenu::setStatusMessage(const char* msg, unsigned long ms) {
+void ArduinoMenu::clearScreen() {
+#ifdef ARDUINO
+    Serial.print("\033[2J\033[H");
+#else
+    std::cout << "\033[2J\033[H";
+#endif
+}
+
+void ArduinoMenu::setStatusMessage(const char* msg, StatusLevel lvl, unsigned long ms) {
     _statusMsg = msg;
+    _statusLevel = lvl;
     _msgExpiry = millis() + ms;
 }
 

@@ -27,6 +27,7 @@ private:
     ISettingsStorage* _settingsStorage{nullptr};
     SettingsData* _settings{nullptr};
     std::string _statusMsg;
+    StatusLevel _statusLevel{StatusLevel::Normal};
     unsigned long _msgExpiry{0};
     State _state;
     unsigned long _lastActivity;
@@ -41,7 +42,10 @@ private:
     void settingsMenu();
     void showHelp();
     void selfTest();
-    void setStatusMessage(const char* msg, unsigned long ms = 3000);
+    enum class StatusLevel { Normal, Warning, Error };
+    void setStatusMessage(const char* msg, StatusLevel lvl = StatusLevel::Normal,
+                          unsigned long ms = 3000);
+    void clearScreen();
     float readFloat();
     int readInt();
 };
