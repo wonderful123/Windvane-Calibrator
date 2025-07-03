@@ -36,6 +36,7 @@ private:
     ISettingsStorage* _settingsStorage{nullptr};
     SettingsData* _settings{nullptr};
     std::string _statusMsg;
+    enum class StatusLevel { Normal, Warning, Error };
     StatusLevel _statusLevel{StatusLevel::Normal};
     unsigned long _msgExpiry{0};
     State _state;
@@ -58,7 +59,6 @@ private:
     void updateLiveDisplay();
     void runCalibration();
     void showHelp();
-    enum class StatusLevel { Normal, Warning, Error };
     void setStatusMessage(const char* msg, StatusLevel lvl = StatusLevel::Normal,
                           unsigned long ms = 3000);
     void clearScreen();
