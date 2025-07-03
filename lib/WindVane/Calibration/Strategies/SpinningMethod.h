@@ -22,11 +22,17 @@ struct SpinningConfig {
   int stallTimeoutSec = 5;      ///< Seconds without new detections before prompt
 };
 
+struct SpinningMethodDeps {
+  IADC *adc{};
+  ICalibrationStorage *storage{};
+  IIOHandler *io{};
+  IDiagnostics *diag{};
+  SpinningConfig config{};
+};
+
 class SpinningMethod : public ICalibrationStrategy {
 public:
-  SpinningMethod(IADC *adc, ICalibrationStorage *storage,
-                 IIOHandler *io, IDiagnostics *diag,
-                 SpinningConfig config = {});
+  explicit SpinningMethod(const SpinningMethodDeps &deps);
 
   // Runs the interactive calibration procedure.
   void calibrate() override;
@@ -48,16 +54,23 @@ private:
   std::deque<float> _recent;
   SpinningConfig _config;
 
+  struct SessionState {
+    size_t previousCount{0};
+    bool stop{false};
+    bool abort{false};
+    float prevReading{-1.0f};
+    std::chrono::steady_clock::time_point lastIncrease{std::chrono::steady_clock::now()};
+  };
+
   void saveCalibration() const;
 
   void promptStart() const;
   bool checkStall(std::chrono::steady_clock::time_point now,
                   std::chrono::steady_clock::time_point &last,
                   const std::chrono::seconds &timeout) const;
-  void updateClusters(float reading, float threshold, int bufferSize,
-                      int expectedPositions, size_t &prevCount,
-                      std::chrono::steady_clock::time_point &lastIncrease,
-                      bool &stop);
-  void handleUserCommand(bool &stop, bool &abort, int expectedPositions);
+  void updateClusters(float reading, SessionState &state);
+  void handleUserCommand(SessionState &state);
   void finalizeCalibration(bool abort, float mergeThreshold);
+  void processReading(float reading, SessionState &state);
+  void initSession(SessionState &state);
 };

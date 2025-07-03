@@ -2,15 +2,12 @@
 #include "Strategies/SpinningMethod.h"
 
 std::unique_ptr<ICalibrationStrategy> createCalibrationStrategy(
-    CalibrationMethod method,
-    IADC *adc,
-    ICalibrationStorage *storage,
-    IIOHandler *io,
-    IDiagnostics *diag,
-    const SpinningConfig &config) {
-    switch (method) {
+    const StrategyContext &ctx) {
+    switch (ctx.method) {
     case CalibrationMethod::SPINNING:
-    default:
-        return std::make_unique<SpinningMethod>(adc, storage, io, diag, config);
+    default: {
+        SpinningMethodDeps deps{ctx.adc, ctx.storage, ctx.io, ctx.diag, ctx.config};
+        return std::make_unique<SpinningMethod>(deps);
+    }
     }
 }

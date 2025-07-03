@@ -28,13 +28,13 @@ void setup() {
   diag = std::make_unique<BufferedDiagnostics>();
   settingsStore = std::make_unique<FileSettingsStorage>("settings.cfg");
   settingsStore->load(settings);
-  windVane = std::make_unique<WindVane>(adc.get(), WindVaneType::REED_SWITCH,
-                                        CalibrationMethod::SPINNING,
-                                        storage.get(), io.get(), diag.get(),
-                                        settings.spin);
-  menu = std::make_unique<ArduinoMenu>(windVane.get(), io.get(), diag.get(),
-                                       storage.get(), settingsStore.get(),
-                                       &settings);
+  WindVaneConfig vaneCfg{adc.get(), WindVaneType::REED_SWITCH,
+                         CalibrationMethod::SPINNING, storage.get(),
+                         io.get(), diag.get(), settings.spin};
+  windVane = std::make_unique<WindVane>(vaneCfg);
+  ArduinoMenuConfig menuCfg{windVane.get(), io.get(), diag.get(),
+                            storage.get(), settingsStore.get(), &settings};
+  menu = std::make_unique<ArduinoMenu>(menuCfg);
   menu->begin();
 }
 

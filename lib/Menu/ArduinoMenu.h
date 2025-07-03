@@ -8,12 +8,18 @@
 #include <Settings/SettingsData.h>
 #include <string>
 
+struct ArduinoMenuConfig {
+    WindVane* vane{};
+    IIOHandler* io{};
+    IDiagnostics* diag{};
+    ICalibrationStorage* storage{nullptr};
+    ISettingsStorage* settingsStorage{nullptr};
+    SettingsData* settings{nullptr};
+};
+
 class ArduinoMenu {
 public:
-    ArduinoMenu(WindVane* vane, IIOHandler* io, IDiagnostics* diag,
-                ICalibrationStorage* storage = nullptr,
-                ISettingsStorage* settingsStorage = nullptr,
-                SettingsData* settings = nullptr);
+    explicit ArduinoMenu(const ArduinoMenuConfig& cfg);
     void begin();
     void update();
 private:
@@ -35,7 +41,17 @@ private:
 
     void showMainMenu();
     void showStatusLine();
+    const char* statusText(CalibrationManager::CalibrationStatus st) const;
+    void renderStatusLineArduino(float dir, const char* statusStr, unsigned long ago);
+    void renderStatusLineHost(float dir, const char* statusStr, unsigned long ago);
+    void clearExpiredMessage();
     void handleMainInput(char c);
+    void handleDisplaySelection();
+    void handleCalibrateSelection();
+    void handleDiagnosticsSelection();
+    void handleSettingsSelectionMenu();
+    void handleHelpSelection();
+    void handleUnknownSelection();
     void updateLiveDisplay();
     void runCalibration();
     void showDiagnostics();

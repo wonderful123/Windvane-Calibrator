@@ -12,10 +12,9 @@
 using namespace std::chrono_literals;
 
 
-SpinningMethod::SpinningMethod(IADC *adc, ICalibrationStorage *storage,
-                               IIOHandler *io, IDiagnostics *diag,
-                               SpinningConfig config)
-    : _adc(adc), _storage(storage), _io(io), _diag(diag), _config(config) {
+SpinningMethod::SpinningMethod(const SpinningMethodDeps &deps)
+    : _adc(deps.adc), _storage(deps.storage), _io(deps.io),
+      _diag(deps.diag), _config(deps.config) {
   if (_storage) {
     int version = 0;
     std::vector<ClusterData> clusters;
@@ -34,41 +33,24 @@ void SpinningMethod::saveCalibration() const {
 void SpinningMethod::calibrate() {
   promptStart();
 
-  const float threshold = _config.threshold;
-  const int bufferSize = _config.bufferSize;
-  const int expectedPositions = _config.expectedPositions;
-  const std::chrono::milliseconds sampleDelay(_config.sampleDelayMs);
+  SessionState state;
+  initSession(state);
 
-  _clusterMgr.clear();
-  _recent.clear();
-  size_t previousCount = 0;
-  bool stop = false;
-  bool abort = false;
-  float prevReading = -1.0f;
-  auto lastIncrease = std::chrono::steady_clock::now();
+  const std::chrono::milliseconds sampleDelay(_config.sampleDelayMs);
   const std::chrono::seconds stallTimeout(_config.stallTimeoutSec);
 
-  while (!stop) {
+  while (!state.stop) {
     float reading = _adc->read();
-    if (checkStall(std::chrono::steady_clock::now(), lastIncrease, stallTimeout))
-      stop = true;
+    if (checkStall(std::chrono::steady_clock::now(), state.lastIncrease,
+                   stallTimeout))
+      state.stop = true;
 
-    if (reading <= 0.0f || reading >= 1.0f) {
-      _clusterMgr.recordAnomaly();
-    } else {
-      updateClusters(reading, threshold, bufferSize, expectedPositions,
-                    previousCount, lastIncrease, stop);
-
-      if (prevReading >= 0 && reading < prevReading)
-        _diag->warn("Warning: reverse rotation detected");
-      prevReading = reading;
-    }
-
-    handleUserCommand(stop, abort, expectedPositions);
+    processReading(reading, state);
+    handleUserCommand(state);
     _io->waitMs(sampleDelay.count());
   }
 
-  finalizeCalibration(abort, threshold * 1.5f);
+  finalizeCalibration(state.abort, _config.threshold * 1.5f);
 }
 
 float SpinningMethod::mapReading(float reading) const {
@@ -93,51 +75,48 @@ bool SpinningMethod::checkStall(std::chrono::steady_clock::time_point now,
   return false;
 }
 
-void SpinningMethod::updateClusters(float reading, float threshold, int bufferSize,
-                                    int expectedPositions, size_t &prevCount,
-                                    std::chrono::steady_clock::time_point &lastIncrease,
-                                    bool &stop) {
+void SpinningMethod::updateClusters(float reading, SessionState &state) {
   _recent.push_back(reading);
-  if (_recent.size() > static_cast<size_t>(bufferSize))
+  if (_recent.size() > static_cast<size_t>(_config.bufferSize))
     _recent.pop_front();
 
   int inRange = 0;
   for (float r : _recent) {
-    if (std::fabs(r - reading) < threshold)
+    if (std::fabs(r - reading) < _config.threshold)
       ++inRange;
   }
 
   if (inRange > static_cast<int>(_recent.size()) / 2) {
-    bool added = _clusterMgr.addOrUpdate(reading, threshold);
-    if (_clusterMgr.clusters().size() != prevCount) {
+    bool added = _clusterMgr.addOrUpdate(reading, _config.threshold);
+    if (_clusterMgr.clusters().size() != state.previousCount) {
       std::string msg = "Position detected: " +
                         std::to_string(_clusterMgr.clusters().size()) + "/" +
-                        std::to_string(expectedPositions);
+                        std::to_string(_config.expectedPositions);
       _diag->info(msg.c_str());
-      prevCount = _clusterMgr.clusters().size();
-      lastIncrease = std::chrono::steady_clock::now();
-      if (_clusterMgr.clusters().size() >= static_cast<size_t>(expectedPositions)) {
+      state.previousCount = _clusterMgr.clusters().size();
+      state.lastIncrease = std::chrono::steady_clock::now();
+      if (_clusterMgr.clusters().size() >= static_cast<size_t>(_config.expectedPositions)) {
         if (_io->yesNoPrompt("All expected positions detected. Stop now? (Y/N)"))
-          stop = true;
+          state.stop = true;
       }
     }
     (void)added;
   }
 }
 
-void SpinningMethod::handleUserCommand(bool &stop, bool &abort, int expectedPositions) {
+void SpinningMethod::handleUserCommand(SessionState &state) {
   if (!_io->hasInput())
     return;
   char c = _io->readInput();
   if (c == 's' || c == 'S') {
     bool confirm = true;
-    if (_clusterMgr.clusters().size() != static_cast<size_t>(expectedPositions))
+    if (_clusterMgr.clusters().size() != static_cast<size_t>(_config.expectedPositions))
       confirm = _io->yesNoPrompt("Calibration incomplete. Stop anyway? (Y/N)");
     if (confirm)
-      stop = true;
+      state.stop = true;
   } else if (c == 'q' || c == 'Q') {
-    abort = true;
-    stop = true;
+    state.abort = true;
+    state.stop = true;
   }
 }
 
@@ -154,4 +133,23 @@ void SpinningMethod::finalizeCalibration(bool abort, float mergeThreshold) {
   } else {
     _diag->info("Calibration aborted. Previous data preserved.");
   }
+}
+
+void SpinningMethod::initSession(SessionState &state) {
+  _clusterMgr.clear();
+  _recent.clear();
+  state = SessionState{}; // reset fields
+}
+
+void SpinningMethod::processReading(float reading, SessionState &state) {
+  if (reading <= 0.0f || reading >= 1.0f) {
+    _clusterMgr.recordAnomaly();
+    return;
+  }
+
+  updateClusters(reading, state);
+
+  if (state.prevReading >= 0 && reading < state.prevReading)
+    _diag->warn("Warning: reverse rotation detected");
+  state.prevReading = reading;
 }

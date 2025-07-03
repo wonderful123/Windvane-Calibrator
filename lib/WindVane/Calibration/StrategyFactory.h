@@ -8,10 +8,14 @@
 #include "../Diagnostics/IDiagnostics.h"
 #include <memory>
 
+struct StrategyContext {
+    CalibrationMethod method{CalibrationMethod::SPINNING};
+    IADC *adc{};
+    ICalibrationStorage *storage{};
+    IIOHandler *io{};
+    IDiagnostics *diag{};
+    SpinningConfig config{};
+};
+
 std::unique_ptr<ICalibrationStrategy> createCalibrationStrategy(
-    CalibrationMethod method,
-    IADC *adc,
-    ICalibrationStorage *storage,
-    IIOHandler *io,
-    IDiagnostics *diag,
-    const SpinningConfig &config = {});
+    const StrategyContext &ctx);
