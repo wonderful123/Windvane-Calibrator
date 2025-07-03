@@ -10,7 +10,7 @@
 #include "Calibration/Strategies/ISpinningConfigurable.h"
 #include "Diagnostics/IDiagnostics.h"
 #include "IADC.h"
-#include "IO/IIO.h"
+#include "UI/IIO.h"
 #include "Storage/ICalibrationStorage.h"
 
 /**

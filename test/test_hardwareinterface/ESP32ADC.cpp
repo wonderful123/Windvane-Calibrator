@@ -1,4 +1,4 @@
-#include <Hardware/ESP32/ADC.h>
+#include <Drivers/ESP32/ADC.h>
 #include <IADC.h>
 #include <gtest/gtest.h>
 

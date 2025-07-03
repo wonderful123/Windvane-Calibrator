@@ -4,8 +4,8 @@
 
 #ifdef ARDUINO
 #include <Diagnostics/SerialDiagnostics.h>
-#include <IO/SerialIOHandler.h>
-#include <IO/SerialOutput.h>
+#include <UI/SerialIOHandler.h>
+#include <UI/SerialOutput.h>
 
 class ArduinoPlatform : public IPlatform {
 public:
@@ -24,8 +24,8 @@ using PlatformIOHandler = SerialIOHandler;
 using PlatformOutput = SerialOutput;
 #else
 #include <Diagnostics/ConsoleDiagnostics.h>
-#include <IO/ConsoleIOHandler.h>
-#include <IO/ConsoleOutput.h>
+#include <UI/ConsoleIOHandler.h>
+#include <UI/ConsoleOutput.h>
 #include <chrono>
 
 class HostPlatform : public IPlatform {

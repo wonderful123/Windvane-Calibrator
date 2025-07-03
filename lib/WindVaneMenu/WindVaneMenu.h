@@ -1,13 +1,13 @@
 #pragma once
 #include <Diagnostics/IDiagnostics.h>
-#include <IO/IIO.h>
+#include <UI/IIO.h>
 #include <Storage/ICalibrationStorage.h>
 #include <WindVane.h>
 #include "WindVaneMenuLogic.h"
 #include "WindVaneMenuPresenter.h"
 #include "WindVaneMenuTypes.h"
 #include <Platform/IPlatform.h>
-#include <Settings/SettingsManager.h>
+#include <Storage/Settings/SettingsManager.h>
 #include <string>
 #include <functional>
 #include <unordered_map>

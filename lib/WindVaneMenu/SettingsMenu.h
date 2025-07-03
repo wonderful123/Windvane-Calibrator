@@ -1,8 +1,8 @@
 #pragma once
-#include <IO/IIO.h>
+#include <UI/IIO.h>
 #include <Storage/ICalibrationStorage.h>
 #include <WindVane.h>
-#include <Settings/SettingsManager.h>
+#include <Storage/Settings/SettingsManager.h>
 
 class SettingsMenu {
  public:

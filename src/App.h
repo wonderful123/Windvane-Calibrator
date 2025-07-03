@@ -2,10 +2,10 @@
 #include <WindVane.h>
 #include <memory>
 #include <WindVaneMenu.h>
-#include <IO/IIO.h>
+#include <UI/IIO.h>
 #include <Diagnostics/IDiagnostics.h>
 #include <Storage/ICalibrationStorage.h>
-#include <Settings/SettingsManager.h>
+#include <Storage/Settings/SettingsManager.h>
 #include <Platform/IPlatform.h>
 
 #include "Config.h"
