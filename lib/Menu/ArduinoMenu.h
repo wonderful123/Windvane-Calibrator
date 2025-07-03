@@ -2,6 +2,7 @@
 #include <Diagnostics/IBufferedDiagnostics.h>
 #include <Diagnostics/IDiagnostics.h>
 #include <IO/IIOHandler.h>
+#include <IO/INumericReader.h>  // <-- ADD THIS INCLUDE
 #include <IO/IOutput.h>
 #include <Settings/ISettingsStorage.h>
 #include <Settings/SettingsData.h>
@@ -14,11 +15,12 @@ struct ArduinoMenuConfig {
   WindVane* vane{};
   IIOHandler* io{};
   IDiagnostics* diag{};
-  IBufferedDiagnostics* bufferedDiag{};  // NEW FIELD
+  IBufferedDiagnostics* bufferedDiag{};
   IOutput* out{};
-  ICalibrationStorage* storage{nullptr};
-  ISettingsStorage* settingsStorage{nullptr};
-  SettingsData* settings{nullptr};
+  ICalibrationStorage* storage{};
+  ISettingsStorage* settingsStorage{};
+  SettingsData* settings{};
+  INumericReader* numeric{};  // <-- ADD TO CONFIG, pass to SettingsMenu
 };
 
 class ArduinoMenu {
@@ -28,6 +30,16 @@ class ArduinoMenu {
   void update();
 
  private:
+  WindVane* _vane;
+  IIOHandler* _io;
+  IDiagnostics* _diag;
+  IBufferedDiagnostics* _buffered;
+  IOutput* _out;
+  ICalibrationStorage* _storage;
+  ISettingsStorage* _settingsStorage;
+  SettingsData* _settings;
+  INumericReader* _numeric;  // <-- DECLARE _numeric
+
   enum class State {
     Main,
     LiveDisplay,
@@ -36,42 +48,34 @@ class ArduinoMenu {
     Settings,
     Help
   };
-
-  WindVane* _vane;
-  IIOHandler* _io;
-  IDiagnostics* _diag;
-  IBufferedDiagnostics* _buffered{nullptr};
-  IOutput* _out;
-  ICalibrationStorage* _storage{nullptr};
-  ISettingsStorage* _settingsStorage{nullptr};
-  SettingsData* _settings{nullptr};
-  std::string _statusMsg;
-  enum class StatusLevel { Normal, Warning, Error };
-  StatusLevel _statusLevel{StatusLevel::Normal};
-  unsigned long _msgExpiry{0};
   State _state;
   unsigned long _lastActivity;
   unsigned long _lastCalibration;
 
-  void showMainMenu();
+  enum class StatusLevel { Normal, Warning, Error };
+  std::string _statusMsg;
+  StatusLevel _statusLevel{StatusLevel::Normal};
+  unsigned long _msgExpiry{0};
+
   void showStatusLine();
+  void showMainMenu();
+  void handleMainInput(char c);
+  void updateLiveDisplay();
   const char* statusText(CalibrationManager::CalibrationStatus st) const;
   void renderStatusLineArduino(float dir, const char* statusStr,
                                unsigned long ago);
   void renderStatusLineHost(float dir, const char* statusStr,
                             unsigned long ago);
   void clearExpiredMessage();
-  void handleMainInput(char c);
+  void runCalibration();
   void handleDisplaySelection();
   void handleCalibrateSelection();
   void handleDiagnosticsSelection();
   void handleSettingsSelectionMenu();
   void handleHelpSelection();
   void handleUnknownSelection();
-  void updateLiveDisplay();
-  void runCalibration();
   void showHelp();
+  void clearScreen();
   void setStatusMessage(const char* msg, StatusLevel lvl = StatusLevel::Normal,
                         unsigned long ms = 3000);
-  void clearScreen();
 };

@@ -1,4 +1,5 @@
 #include "ArduinoMenu.h"
+
 #include "DiagnosticsMenu.h"
 #include "SettingsMenu.h"
 
@@ -6,19 +7,19 @@
 #include <Arduino.h>
 #else
 #include <chrono>
-#include <limits>
 #include <cstdio>
+#include <limits>
 static unsigned long millis() {
-    using namespace std::chrono;
-    static auto start = steady_clock::now();
-    return duration_cast<milliseconds>(steady_clock::now() - start).count();
+  using namespace std::chrono;
+  static auto start = steady_clock::now();
+  return duration_cast<milliseconds>(steady_clock::now() - start).count();
 }
 #endif
 
 static const char* compassPoint(float deg) {
-    static const char* pts[] = {"N","NE","E","SE","S","SW","W","NW"};
-    int idx = static_cast<int>((deg + 22.5f)/45.0f) & 7;
-    return pts[idx];
+  static const char* pts[] = {"N", "NE", "E", "SE", "S", "SW", "W", "NW"};
+  int idx = static_cast<int>((deg + 22.5f) / 45.0f) & 7;
+  return pts[idx];
 }
 
 ArduinoMenu::ArduinoMenu(const ArduinoMenuConfig& cfg)
@@ -30,208 +31,249 @@ ArduinoMenu::ArduinoMenu(const ArduinoMenuConfig& cfg)
       _storage(cfg.storage),
       _settingsStorage(cfg.settingsStorage),
       _settings(cfg.settings),
+      _numeric(cfg.numeric),  // <-- ASSIGN _numeric from config
       _state(State::Main),
       _lastActivity(0),
       _lastCalibration(0) {}
 
 void ArduinoMenu::begin() {
-    showMainMenu();
-    _lastActivity = millis();
-    _lastCalibration = _vane->lastCalibrationTimestamp();
+  showMainMenu();
+  _lastActivity = millis();
+  _lastCalibration = _vane->lastCalibrationTimestamp();
 }
 
 void ArduinoMenu::update() {
-    if (_io->hasInput()) {
-        char c = _io->readInput();
-        _lastActivity = millis();
-        switch (_state) {
-            case State::Main: handleMainInput(c); break;
-            case State::LiveDisplay: _state=State::Main; showMainMenu(); break;
-            default: break;
-        }
-    }
-
+  if (_io->hasInput()) {
+    char c = _io->readInput();
+    _lastActivity = millis();
     switch (_state) {
-        case State::LiveDisplay: updateLiveDisplay(); break;
-        default: break;
-    }
-
-    if (millis() - _lastActivity > 30000 && _state != State::Main) {
+      case State::Main:
+        handleMainInput(c);
+        break;
+      case State::LiveDisplay:
         _state = State::Main;
         showMainMenu();
+        break;
+      default:
+        break;
     }
-
-    showStatusLine();
+  }
+  switch (_state) {
+    case State::LiveDisplay:
+      updateLiveDisplay();
+      break;
+    default:
+      break;
+  }
+  if (millis() - _lastActivity > 30000 && _state != State::Main) {
+    _state = State::Main;
+    showMainMenu();
+  }
+  showStatusLine();
 }
 
 void ArduinoMenu::showStatusLine() {
-    float dir = _vane->direction();
-    unsigned long ago = (millis() - _lastCalibration)/60000UL;
-    const char* st = statusText(_vane->calibrationStatus());
+  float dir = _vane->direction();
+  unsigned long ago = (millis() - _lastCalibration) / 60000UL;
+  const char* st = statusText(_vane->calibrationStatus());
 #ifdef ARDUINO
-    renderStatusLineArduino(dir, st, ago);
+  renderStatusLineArduino(dir, st, ago);
 #else
-    renderStatusLineHost(dir, st, ago);
+  renderStatusLineHost(dir, st, ago);
 #endif
-    clearExpiredMessage();
+  clearExpiredMessage();
 }
 
 void ArduinoMenu::showMainMenu() {
-    clearScreen();
-    _out->writeln("");
-    _out->writeln("=== Wind Vane Menu ===");
-    _out->writeln("[D] Display direction ");
-    _out->writeln("[C] Calibrate        ");
-    _out->writeln("[G] Diagnostics      ");
-    _out->writeln("[S] Settings         ");
-    _out->writeln("[H] Help             ");
+  clearScreen();
+  _out->writeln("");
+  _out->writeln("=== Wind Vane Menu ===");
+  _out->writeln("[D] Display direction ");
+  _out->writeln("[C] Calibrate        ");
+  _out->writeln("[G] Diagnostics      ");
+  _out->writeln("[S] Settings         ");
+  _out->writeln("[H] Help             ");
 #ifndef ARDUINO
-    _out->writeln("Choose option: ");
+  _out->writeln("Choose option: ");
 #endif
 }
 
 void ArduinoMenu::handleMainInput(char c) {
-    if (c == '\n' || c == '\r') { showMainMenu(); return; }
-    switch(c) {
-        case 'D': case 'd': handleDisplaySelection(); break;
-        case 'C': case 'c': handleCalibrateSelection(); break;
-        case 'G': case 'g': handleDiagnosticsSelection(); break;
-        case 'S': case 's': handleSettingsSelectionMenu(); break;
-        case 'H': case 'h': handleHelpSelection(); break;
-        default: handleUnknownSelection(); break;
-    }
+  if (c == '\n' || c == '\r') {
+    showMainMenu();
+    return;
+  }
+  switch (c) {
+    case 'D':
+    case 'd':
+      handleDisplaySelection();
+      break;
+    case 'C':
+    case 'c':
+      handleCalibrateSelection();
+      break;
+    case 'G':
+    case 'g':
+      handleDiagnosticsSelection();
+      break;
+    case 'S':
+    case 's':
+      handleSettingsSelectionMenu();
+      break;
+    case 'H':
+    case 'h':
+      handleHelpSelection();
+      break;
+    default:
+      handleUnknownSelection();
+      break;
+  }
 }
 
 void ArduinoMenu::updateLiveDisplay() {
-    static unsigned long last = 0;
-    if (millis() - last > 1000) {
-        last = millis();
-        float d = _vane->direction();
-        char buf[64];
-        snprintf(buf, sizeof(buf), "\rDir: %.1f\xC2\xB0 (%s)   \r", d, compassPoint(d));
-        _out->write(buf);
-    }
-    if (_io->hasInput()) {
-        _io->readInput();
-        _state = State::Main;
-        showMainMenu();
-    }
+  static unsigned long last = 0;
+  if (millis() - last > 1000) {
+    last = millis();
+    float d = _vane->direction();
+    char buf[64];
+    snprintf(buf, sizeof(buf), "\rDir: %.1f\xC2\xB0 (%s)   \r", d,
+             compassPoint(d));
+    _out->write(buf);
+  }
+  if (_io->hasInput()) {
+    _io->readInput();
+    _state = State::Main;
+    showMainMenu();
+  }
 }
 
-const char* ArduinoMenu::statusText(CalibrationManager::CalibrationStatus st) const {
-    switch (st) {
-        case CalibrationManager::CalibrationStatus::NotStarted: return "Uncal";
-        case CalibrationManager::CalibrationStatus::AwaitingStart: return "Awaiting";
-        case CalibrationManager::CalibrationStatus::InProgress: return "Calibrating";
-        case CalibrationManager::CalibrationStatus::Completed: return "OK";
-    }
-    return "Unknown";
+const char* ArduinoMenu::statusText(
+    CalibrationManager::CalibrationStatus st) const {
+  switch (st) {
+    case CalibrationManager::CalibrationStatus::NotStarted:
+      return "Uncal";
+    case CalibrationManager::CalibrationStatus::AwaitingStart:
+      return "Awaiting";
+    case CalibrationManager::CalibrationStatus::InProgress:
+      return "Calibrating";
+    case CalibrationManager::CalibrationStatus::Completed:
+      return "OK";
+  }
+  return "Unknown";
 }
 
-void ArduinoMenu::renderStatusLineArduino(float dir, const char* statusStr, unsigned long ago) {
-    char line[80];
-    snprintf(line, sizeof(line), "\rDir:%6.1f\xC2\xB0 %-2s Status:%-10s Cal:%4lum", dir,
-             compassPoint(dir), statusStr, ago);
-    _out->write(line);
-    if (!_statusMsg.empty() && millis() < _msgExpiry) {
-        if (_statusLevel != StatusLevel::Normal) _out->write(" !! ");
-        _out->write(_statusMsg.c_str());
-    }
-    _out->write("    \r");
+void ArduinoMenu::renderStatusLineArduino(float dir, const char* statusStr,
+                                          unsigned long ago) {
+  char line[80];
+  snprintf(line, sizeof(line),
+           "\rDir:%6.1f\xC2\xB0 %-2s Status:%-10s Cal:%4lum", dir,
+           compassPoint(dir), statusStr, ago);
+  _out->write(line);
+  if (!_statusMsg.empty() && millis() < _msgExpiry) {
+    if (_statusLevel != StatusLevel::Normal) _out->write(" !! ");
+    _out->write(_statusMsg.c_str());
+  }
+  _out->write("    \r");
 }
 
-void ArduinoMenu::renderStatusLineHost(float dir, const char* statusStr, unsigned long ago) {
-    char line[80];
-    snprintf(line, sizeof(line), "\rDir:%6.1f\xC2\xB0 %-2s Status:%-10s Cal:%4lum", dir,
-             compassPoint(dir), statusStr, ago);
-    _out->write(line);
-    if (!_statusMsg.empty() && millis() < _msgExpiry) {
-        const char* color=""; const char* reset="";
-        if (_statusLevel == StatusLevel::Warning) { color="\033[33m"; reset="\033[0m"; }
-        else if (_statusLevel == StatusLevel::Error) { color="\033[31m"; reset="\033[0m"; }
-        _out->write(" ");
-        _out->write(color);
-        _out->write(_statusMsg.c_str());
-        _out->write(reset);
+void ArduinoMenu::renderStatusLineHost(float dir, const char* statusStr,
+                                       unsigned long ago) {
+  char line[80];
+  snprintf(line, sizeof(line),
+           "\rDir:%6.1f\xC2\xB0 %-2s Status:%-10s Cal:%4lum", dir,
+           compassPoint(dir), statusStr, ago);
+  _out->write(line);
+  if (!_statusMsg.empty() && millis() < _msgExpiry) {
+    const char* color = "";
+    const char* reset = "";
+    if (_statusLevel == StatusLevel::Warning) {
+      color = "\033[33m";
+      reset = "\033[0m";
+    } else if (_statusLevel == StatusLevel::Error) {
+      color = "\033[31m";
+      reset = "\033[0m";
     }
-    _out->write("    \r");
+    _out->write(" ");
+    _out->write(color);
+    _out->write(_statusMsg.c_str());
+    _out->write(reset);
+  }
+  _out->write("    \r");
 }
 
 void ArduinoMenu::clearExpiredMessage() {
-    if (!_statusMsg.empty() && millis() >= _msgExpiry) {
-        _statusMsg.clear();
-        _statusLevel = StatusLevel::Normal;
-    }
+  if (!_statusMsg.empty() && millis() >= _msgExpiry) {
+    _statusMsg.clear();
+    _statusLevel = StatusLevel::Normal;
+  }
 }
 
 void ArduinoMenu::runCalibration() {
-    if (_io->yesNoPrompt("Start calibration? (Y/N)")) {
-        _vane->runCalibration();
-        _lastCalibration = millis();
-        if (_diag)
-            _diag->info("Calibration completed");
-        setStatusMessage("Calibration complete", StatusLevel::Normal);
-    }
+  if (_io->yesNoPrompt("Start calibration? (Y/N)")) {
+    _vane->runCalibration();
+    _lastCalibration = millis();
+    if (_diag) _diag->info("Calibration completed");
+    setStatusMessage("Calibration complete", StatusLevel::Normal);
+  }
 }
 
 void ArduinoMenu::handleDisplaySelection() {
-    _state = State::LiveDisplay;
-    if (_vane->calibrationStatus() != CalibrationManager::CalibrationStatus::Completed)
-        setStatusMessage("Warning: uncalibrated", StatusLevel::Warning);
-    _out->writeln("Live direction - press any key to return");
+  _state = State::LiveDisplay;
+  if (_vane->calibrationStatus() !=
+      CalibrationManager::CalibrationStatus::Completed)
+    setStatusMessage("Warning: uncalibrated", StatusLevel::Warning);
+  _out->writeln("Live direction - press any key to return");
 }
 
 void ArduinoMenu::handleCalibrateSelection() {
-    _state = State::Calibrate;
-    runCalibration();
-    _state = State::Main;
-    showMainMenu();
+  _state = State::Calibrate;
+  runCalibration();
+  _state = State::Main;
+  showMainMenu();
 }
 
 void ArduinoMenu::handleDiagnosticsSelection() {
-    _state = State::Diagnostics;
-    DiagnosticsMenu menu(_vane, _io, _buffered, _diag, _out);
-    menu.show(_lastCalibration);
-    _state = State::Main;
-    showMainMenu();
+  _state = State::Diagnostics;
+  DiagnosticsMenu menu(_vane, _io, _buffered, _diag, _out);
+  menu.show(_lastCalibration);
+  _state = State::Main;
+  showMainMenu();
 }
 
 void ArduinoMenu::handleSettingsSelectionMenu() {
-    _state = State::Settings;
-    SettingsMenu menu(_vane, _io, _storage, _settingsStorage, _settings, _out);
-    menu.run();
-    _state = State::Main;
-    showMainMenu();
+  _state = State::Settings;
+  SettingsMenu menu(_vane, _io, _numeric, _storage, _settingsStorage, _settings,
+                    _out);
+  menu.run();
+  _state = State::Main;
+  showMainMenu();
 }
 
 void ArduinoMenu::handleHelpSelection() {
-    _state = State::Help;
-    showHelp();
-    _state = State::Main;
-    showMainMenu();
+  _state = State::Help;
+  showHelp();
+  _state = State::Main;
+  showMainMenu();
 }
 
 void ArduinoMenu::handleUnknownSelection() {
-    setStatusMessage("Unknown option. Press [H] for help.", StatusLevel::Error);
+  setStatusMessage("Unknown option. Press [H] for help.", StatusLevel::Error);
 }
-
 
 void ArduinoMenu::showHelp() {
-    _out->writeln("--- Help ---");
-    _out->writeln("D: Live wind direction display");
-    _out->writeln("C: Start calibration routine");
-    _out->writeln("G: View diagnostics log");
-    _out->writeln("S: Settings and maintenance");
-    _out->writeln("H: Show this help text");
+  _out->writeln("--- Help ---");
+  _out->writeln("D: Live wind direction display");
+  _out->writeln("C: Start calibration routine");
+  _out->writeln("G: View diagnostics log");
+  _out->writeln("S: Settings and maintenance");
+  _out->writeln("H: Show this help text");
 }
 
-void ArduinoMenu::clearScreen() {
-    _out->clear();
-}
+void ArduinoMenu::clearScreen() { _out->clear(); }
 
-void ArduinoMenu::setStatusMessage(const char* msg, StatusLevel lvl, unsigned long ms) {
-    _statusMsg = msg;
-    _statusLevel = lvl;
-    _msgExpiry = millis() + ms;
+void ArduinoMenu::setStatusMessage(const char* msg, StatusLevel lvl,
+                                   unsigned long ms) {
+  _statusMsg = msg;
+  _statusLevel = lvl;
+  _msgExpiry = millis() + ms;
 }
-

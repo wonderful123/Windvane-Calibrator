@@ -26,15 +26,19 @@ DeviceConfig deviceConfig = defaultDeviceConfig();
 
 void setup() {
   Serial.begin(deviceConfig.serialBaud);
+
   adc = std::make_unique<ESP32ADC>(deviceConfig.windVanePin);
   storage = std::make_unique<EEPROMCalibrationStorage>(
       deviceConfig.calibrationAddress, deviceConfig.eepromSize);
+
   io = std::make_unique<SerialIOHandler>();
   out = std::make_unique<SerialOutput>();
   diag = std::make_unique<BufferedDiagnostics>();
   settingsStore =
       std::make_unique<FileSettingsStorage>(deviceConfig.settingsFile);
+
   settingsStore->load(settings);
+
   WindVaneConfig vaneCfg{adc.get(),
                          WindVaneType::REED_SWITCH,
                          CalibrationMethod::SPINNING,
@@ -43,11 +47,15 @@ void setup() {
                          diag.get(),
                          settings.spin};
   windVane = std::make_unique<WindVane>(vaneCfg);
-  // ArduinoMenuConfig: pass diag.get() as both diag and bufferedDiag
-  ArduinoMenuConfig menuCfg{windVane.get(),      io.get(),  diag.get(),
-                            diag.get(),          out.get(), storage.get(),
-                            settingsStore.get(), &settings};
+
+  // Pass io.get() as INumericReader* to ArduinoMenuConfig
+  ArduinoMenuConfig menuCfg{
+      windVane.get(), io.get(),      diag.get(),          diag.get(),
+      out.get(),      storage.get(), settingsStore.get(), &settings,
+      io.get()};  // <-- Pass io.get() as .numeric
+
   menu = std::make_unique<ArduinoMenu>(menuCfg);
+
   menu->begin();
 }
 

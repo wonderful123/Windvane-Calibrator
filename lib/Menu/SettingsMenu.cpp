@@ -1,14 +1,5 @@
 #include "SettingsMenu.h"
 
-#include <IO/IOutput.h>
-#ifdef ARDUINO
-#include <Arduino.h>
-#else
-#include <chrono>
-#include <iostream>
-#include <limits>
-#endif
-
 SettingsMenu::SettingsMenu(WindVane* vane, IIOHandler* io,
                            INumericReader* numeric,
                            ICalibrationStorage* calibStorage,
@@ -23,33 +14,27 @@ SettingsMenu::SettingsMenu(WindVane* vane, IIOHandler* io,
       _out(out) {}
 
 void SettingsMenu::run() {
-#ifdef ARDUINO
-  showSummary();
-  _out->writeln("[1] Threshold  [2] Detents  [3] Smoothing");
-  _out->writeln("[F] Factory reset  [B] Back");
-  bool done = false;
-  while (!done) {
-    char c = readCharBlocking();
-    done = handleSelection(c);
+  _out->writeln("--- Settings Menu ---");
+  // Simple example: change buffer size
+  _out->writeln("1. Change buffer size");
+  _out->writeln("2. Save settings");
+  _out->writeln("3. Back");
+  _out->writeln("Choose option:");
+  int opt = readInt();
+  if (opt == 1) {
+    _out->writeln("Enter new buffer size:");
+    int newBuf = readInt();
+    _settings->spin.bufferSize = newBuf;
+    _out->writeln("Buffer size updated.");
+  } else if (opt == 2) {
+    if (_settingsStorage) _settingsStorage->save(*_settings);
+    _out->writeln("Settings saved.");
   }
-  if (_settingsStorage) _settingsStorage->save(*_settings);
-  _vane->setCalibrationConfig(_settings->spin);
-#endif
-}
-
-char SettingsMenu::readCharBlocking() {
-  while (!_io->hasInput()) _io->waitMs(10);
-  return _io->readInput();
+  // add more settings as needed
 }
 
 float SettingsMenu::readFloat() {
-  if (_numeric) return _numeric->readFloat();
-  return 0.0f;
+  return _numeric ? _numeric->readFloat() : 0.0f;
 }
 
-int SettingsMenu::readInt() {
-  if (_numeric) return _numeric->readInt();
-  return 0;
-}
-
-// ... rest of file unchanged ...
+int SettingsMenu::readInt() { return _numeric ? _numeric->readInt() : 0; }

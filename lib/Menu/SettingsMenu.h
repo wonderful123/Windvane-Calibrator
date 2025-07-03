@@ -13,7 +13,11 @@ class SettingsMenu {
                ICalibrationStorage* calibStorage,
                ISettingsStorage* settingsStorage, SettingsData* settings,
                IOutput* out);
+
   void run();
+
+  float readFloat();
+  int readInt();
 
  private:
   WindVane* _vane;
@@ -23,10 +27,4 @@ class SettingsMenu {
   ISettingsStorage* _settingsStorage;
   SettingsData* _settings;
   IOutput* _out;
-
-  char readCharBlocking();
-  float readFloat();
-  int readInt();
-  void showSummary();
-  bool handleSelection(char c);
 };
