@@ -13,6 +13,7 @@
 #include "IADC.h"
 #include "UI/IIO.h"
 #include "Storage/ICalibrationStorage.h"
+#include <Platform/TimeUtils.h>
 
 /**
  * @enum WindVaneType
@@ -42,7 +43,7 @@ class WindVane {
   float direction();
   CalibrationResult calibrate();       // New: simple method alias for runCalibration()
   CalibrationResult runCalibration();  // Advanced
-  uint32_t lastCalibrationTimestamp() const;
+  platform::TimeMs lastCalibrationTimestamp() const;
   CalibrationManager::CalibrationStatus calibrationStatus() const;
   void clearCalibration();
   void setCalibrationConfig(const SpinningConfig &cfg);

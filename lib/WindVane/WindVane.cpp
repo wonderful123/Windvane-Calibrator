@@ -42,8 +42,8 @@ CalibrationManager::CalibrationStatus WindVane::calibrationStatus() const {
              : CalibrationManager::CalibrationStatus::NotStarted;
 }
 
-uint32_t WindVane::lastCalibrationTimestamp() const {
-  return _storage ? _storage->lastTimestamp() : 0;
+platform::TimeMs WindVane::lastCalibrationTimestamp() const {
+  return _storage ? platform::TimeMs{_storage->lastTimestamp()} : platform::TimeMs{0};
 }
 
 void WindVane::clearCalibration() {

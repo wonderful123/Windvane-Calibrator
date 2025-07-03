@@ -3,6 +3,7 @@
 #include "WindVaneMenuLogic.h"
 #include "WindVaneStatus.h"
 #include <Platform/IPlatform.h>
+#include <Platform/TimeUtils.h>
 #include <UI/IIO.h>
 #include <string>
 
@@ -18,9 +19,9 @@ public:
     void showStatusLine(WindVane& vane);
     void setStatusMessage(const char* msg,
                           MenuStatusLevel lvl = MenuStatusLevel::Normal,
-                          unsigned long ms = 3000);
+                          platform::TimeMs ms = platform::TimeMs{3000});
     void recordCalibration();
-    unsigned long lastCalibration() const { return _lastCalibration; }
+    platform::TimeMs lastCalibration() const { return _lastCalibration; }
 
 private:
     void clearExpiredMessage();
@@ -31,9 +32,9 @@ private:
     WindVaneMenuPresenter& _presenter;
     WindVaneMenuLogic& _logic;
 
-    unsigned long _lastActivity;
-    unsigned long _lastCalibration;
+    platform::TimeMs _lastActivity;
+    platform::TimeMs _lastCalibration;
     std::string _statusMsg;
     MenuStatusLevel _statusLevel;
-    unsigned long _msgExpiry;
+    platform::TimeMs _msgExpiry;
 };

@@ -12,7 +12,7 @@ public:
     explicit FileCalibrationStorage(const std::string& path);
     void save(const std::vector<ClusterData>& clusters, int version) override;
     bool load(std::vector<ClusterData>& clusters, int &version) override;
-    uint32_t lastTimestamp() const override { return _lastTimestamp; }
+    platform::TimeMs lastTimestamp() const override { return platform::TimeMs{_lastTimestamp}; }
     void clear() override;
 
     bool writeBlob(const std::vector<unsigned char>& data) override;

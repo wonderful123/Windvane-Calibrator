@@ -10,8 +10,8 @@ WindVaneMenuDisplayController::WindVaneMenuDisplayController(
       _out(out),
       _presenter(presenter),
       _logic(logic),
-      _lastActivity(0),
-      _lastCalibration(0),
+      _lastActivity(platform::TimeMs{0}),
+      _lastCalibration(platform::TimeMs{0}),
       _statusLevel(MenuStatusLevel::Normal),
       _msgExpiry(0) {}
 
@@ -23,12 +23,12 @@ void WindVaneMenuDisplayController::begin(WindVane& vane) {
 void WindVaneMenuDisplayController::onInput() { _lastActivity = _platform.millis(); }
 
 bool WindVaneMenuDisplayController::checkTimeout() const {
-    return _platform.millis() - _lastActivity > 30000;
+    return _platform.millis() - _lastActivity > platform::TimeMs{30000};
 }
 
 bool WindVaneMenuDisplayController::updateLiveDisplay(WindVane& vane) {
-    static unsigned long last = 0;
-    if (_platform.millis() - last > 1000) {
+    static platform::TimeMs last = platform::TimeMs{0};
+    if (_platform.millis() - last > platform::TimeMs{1000}) {
         last = _platform.millis();
         float d = vane.direction();
         char buf[64];
@@ -51,7 +51,7 @@ void WindVaneMenuDisplayController::showStatusLine(WindVane& vane) {
 
 void WindVaneMenuDisplayController::setStatusMessage(const char* msg,
                                                      MenuStatusLevel lvl,
-                                                     unsigned long ms) {
+                                                     platform::TimeMs ms) {
     _statusMsg = msg;
     _statusLevel = lvl;
     _msgExpiry = _platform.millis() + ms;

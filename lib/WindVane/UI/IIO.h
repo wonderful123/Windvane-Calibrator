@@ -1,4 +1,5 @@
 #pragma once
+#include <Platform/TimeUtils.h>
 
 class IUserIO {
 public:
@@ -6,7 +7,7 @@ public:
     virtual bool hasInput() = 0;
     virtual char readInput() = 0;
     virtual void flushInput() = 0;
-    virtual void waitMs(int ms) = 0;
+    virtual void waitMs(platform::TimeMs ms) = 0;
     virtual bool yesNoPrompt(const char* prompt) = 0;
     // Optional numeric helpers
     virtual float readFloat() { return 0.0f; }

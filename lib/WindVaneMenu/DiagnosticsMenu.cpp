@@ -13,7 +13,7 @@ DiagnosticsMenu::DiagnosticsMenu(WindVane* vane, IUserIO* io,
     : _vane(vane), _io(io), _buffered(buffered), _diag(diag), _out(out),
       _platform(&platform) {}
 
-void DiagnosticsMenu::show(unsigned long lastCalibration) {
+void DiagnosticsMenu::show(platform::TimeMs lastCalibration) {
 #ifdef ARDUINO
     size_t index = 0;
     bool done = false;
@@ -33,7 +33,7 @@ char DiagnosticsMenu::readCharBlocking() {
     return _io->readInput();
 }
 
-void DiagnosticsMenu::renderScreen(size_t index, unsigned long lastCalibration) {
+void DiagnosticsMenu::renderScreen(size_t index, platform::TimeMs lastCalibration) {
 #ifdef ARDUINO
     char buf[32];
     _out->writeln("--- Diagnostics ---");
@@ -45,7 +45,8 @@ void DiagnosticsMenu::renderScreen(size_t index, unsigned long lastCalibration) 
         default: _out->writeln("Not started"); break;
     }
     _out->write("Last calibration: ");
-    snprintf(buf, sizeof(buf), "%lu", (_platform->millis() - lastCalibration)/60000UL);
+    snprintf(buf, sizeof(buf), "%lu",
+             platform::toEmbedded(_platform->millis() - lastCalibration) / 60000UL);
     _out->write(buf);
     _out->writeln(" minutes ago");
     if (_buffered) {

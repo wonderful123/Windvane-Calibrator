@@ -1,5 +1,6 @@
 #pragma once
 #include "IIO.h"
+#include <Platform/TimeUtils.h>
 #include <chrono>
 #include <iostream>
 #include <limits>
@@ -18,8 +19,8 @@ public:
     void flushInput() override {
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     }
-    void waitMs(int ms) override {
-        std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+    void waitMs(platform::TimeMs ms) override {
+        std::this_thread::sleep_for(platform::toChrono(ms));
     }
     bool yesNoPrompt(const char* prompt) override {
         std::cout << prompt << std::endl;

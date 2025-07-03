@@ -1,5 +1,6 @@
 #pragma once
 #include "IIO.h"
+#include <Platform/TimeUtils.h>
 #ifdef ARDUINO
 #include <Arduino.h>
 #endif
@@ -26,9 +27,9 @@ public:
             Serial.read();
 #endif
     }
-    void waitMs(int ms) override {
+    void waitMs(platform::TimeMs ms) override {
 #ifdef ARDUINO
-        delay(ms);
+        delay(platform::toEmbedded(ms));
 #else
         (void)ms;
 #endif

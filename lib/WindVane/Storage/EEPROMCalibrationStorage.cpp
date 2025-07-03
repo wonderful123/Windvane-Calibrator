@@ -14,7 +14,7 @@ void EEPROMCalibrationStorage::save(const std::vector<ClusterData>& clusters, in
     size_t addr = _startAddress;
     EEPROM.begin(_eepromSize);
     EEPROM.put(addr, version); addr += sizeof(int);
-    uint32_t timestamp = _platform.millis();
+    uint32_t timestamp = platform::toEmbedded(_platform.millis());
     _lastTimestamp = timestamp;
     EEPROM.put(addr, timestamp); addr += sizeof(uint32_t);
     uint16_t count = static_cast<uint16_t>(clusters.size());
