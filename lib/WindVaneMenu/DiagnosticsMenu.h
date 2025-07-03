@@ -3,18 +3,20 @@
 #include <UI/IIO.h>
 #include <Diagnostics/IDiagnostics.h>
 #include <Platform/IPlatform.h>
+#include <optional>
+#include <functional>
 
 class DiagnosticsMenu {
 public:
     DiagnosticsMenu(WindVane& vane, IUserIO& io,
-                    IBufferedDiagnostics* buffered, IDiagnostics& diag,
-                    IOutput& out, IPlatform& platform);
+                    std::optional<std::reference_wrapper<IBufferedDiagnostics>> buffered,
+                    IDiagnostics& diag, IOutput& out, IPlatform& platform);
     void show(platform::TimeMs lastCalibration) const;
     enum class SelfTestStatus { Ok, Failed };
 private:
     WindVane& _vane;
     IUserIO& _io;
-    IBufferedDiagnostics* _buffered;
+    std::optional<std::reference_wrapper<IBufferedDiagnostics>> _buffered;
     IDiagnostics& _diag;
     IOutput& _out;
     IPlatform& _platform;

@@ -1,4 +1,5 @@
 #include "App.h"
+#include <optional>
 
 App::App(const DeviceConfig& config, WindVane& v, IUserIO& ioRef,
          IDiagnostics& diagRef, IOutput& outRef, ICalibrationStorage& storageRef,
@@ -17,8 +18,8 @@ void App::begin() {
   settingsMgr.load();
   settingsMgr.apply(vane);
 
-  WindVaneMenuConfig menuCfg{vane, io, diag, nullptr, out, storage, settingsMgr,
-                             platform};
+  WindVaneMenuConfig menuCfg{vane, io, diag, std::nullopt, out, storage,
+                             settingsMgr, platform};
   menu = std::make_unique<WindVaneMenu>(menuCfg);
   menu->begin();
 }

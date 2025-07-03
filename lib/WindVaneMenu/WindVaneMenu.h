@@ -13,6 +13,7 @@
 #include <functional>
 #include <unordered_map>
 #include <vector>
+#include <optional>
 
 /** Dependencies required by the menu. All references are borrowed and must
  * outlive the menu instance. */
@@ -20,7 +21,7 @@ struct WindVaneMenuConfig {
   WindVane& vane;
   IUserIO& io;
   IDiagnostics& diag;
-  IBufferedDiagnostics* bufferedDiag;
+  std::optional<std::reference_wrapper<IBufferedDiagnostics>> bufferedDiag;
   IOutput& out;
   ICalibrationStorage& storage;
   SettingsManager& settingsMgr;
@@ -37,7 +38,7 @@ class WindVaneMenu {
   WindVane& _vane;
   IUserIO& _io;
   IDiagnostics& _diag;
-  IBufferedDiagnostics* _buffered;
+  std::optional<std::reference_wrapper<IBufferedDiagnostics>> _buffered;
   IOutput& _out;
   ICalibrationStorage& _storage;
   SettingsManager& _settingsMgr;

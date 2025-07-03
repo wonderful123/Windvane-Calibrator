@@ -4,12 +4,12 @@
 #include <iostream>
 #include <limits>
 
-DiagnosticsMenu::DiagnosticsMenu(WindVane& vane, IUserIO& io,
-                                 IBufferedDiagnostics* buffered,
-                                 IDiagnostics& diag, IOutput& out,
-                                 IPlatform& platform)
-    : _vane(vane), _io(io), _buffered(buffered), _diag(diag), _out(out),
-      _platform(platform) {}
+DiagnosticsMenu::DiagnosticsMenu(
+    WindVane& vane, IUserIO& io,
+    std::optional<std::reference_wrapper<IBufferedDiagnostics>> buffered,
+    IDiagnostics& diag, IOutput& out, IPlatform& platform)
+    : _vane(vane), _io(io), _buffered(std::move(buffered)), _diag(diag),
+      _out(out), _platform(platform) {}
 
 void DiagnosticsMenu::show(platform::TimeMs lastCalibration) const {
     size_t index = 0;
@@ -23,7 +23,7 @@ void DiagnosticsMenu::show(platform::TimeMs lastCalibration) const {
 
 char DiagnosticsMenu::readCharBlocking() const {
     while (!_io.hasInput())
-        _io.waitMs(10);
+        _io.waitMs(platform::TimeMs{10});
     return _io.readInput();
 }
 
@@ -43,7 +43,7 @@ void DiagnosticsMenu::renderScreen(size_t index, platform::TimeMs lastCalibratio
     _out.write(buf);
     _out.writeln(" minutes ago");
     if (_buffered) {
-        auto& hist = _buffered->history();
+        auto& hist = _buffered->get().history();
         for (size_t i=0;i<5 && index+i<hist.size();++i)
             _out.writeln(hist[index+i].c_str());
     }
@@ -52,12 +52,12 @@ void DiagnosticsMenu::renderScreen(size_t index, platform::TimeMs lastCalibratio
 
 void DiagnosticsMenu::handleAction(char c, size_t &index, bool &exit) const {
     if (c=='N'||c=='n') {
-        if (_buffered && index+5<_buffered->history().size()) index+=5;
+        if (_buffered && index+5<_buffered->get().history().size()) index+=5;
     } else if (c=='P'||c=='p') {
         if (index>=5) index-=5;
     } else if (c=='C'||c=='c') {
         if (_buffered && _io.yesNoPrompt("Clear logs? (Y/N)")) {
-            _buffered->clear();
+            _buffered->get().clear();
             index=0;
         }
     } else if (c=='T'||c=='t') {
