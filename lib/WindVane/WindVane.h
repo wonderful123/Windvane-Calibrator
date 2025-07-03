@@ -5,6 +5,7 @@
 #include <memory>
 
 #include "Calibration/CalibrationManager.h"
+#include "Calibration/CalibrationResult.h"
 #include "Calibration/CalibrationMethod.h"
 #include "Calibration/SpinningConfig.h"
 #include "Calibration/Strategies/ISpinningConfigurable.h"
@@ -39,8 +40,8 @@ class WindVane {
   explicit WindVane(const WindVaneConfig &cfg);
 
   float direction();
-  void calibrate();       // New: simple method alias for runCalibration()
-  void runCalibration();  // Advanced
+  CalibrationResult calibrate();       // New: simple method alias for runCalibration()
+  CalibrationResult runCalibration();  // Advanced
   uint32_t lastCalibrationTimestamp() const;
   CalibrationManager::CalibrationStatus calibrationStatus() const;
   void clearCalibration();

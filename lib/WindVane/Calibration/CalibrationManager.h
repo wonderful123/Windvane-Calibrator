@@ -1,7 +1,6 @@
 #pragma once
 #include "Calibration/Strategies/ICalibrationStrategy.h"
-#include "../UI/IIO.h"
-#include "../Diagnostics/IDiagnostics.h"
+#include "CalibrationResult.h"
 #include <memory>
 
 class CalibrationManager {
@@ -13,14 +12,13 @@ public:
     Completed
   };
 
-  CalibrationManager(std::unique_ptr<ICalibrationStrategy> strategy,
-                     IUserIO *io, IDiagnostics *diag);
+  explicit CalibrationManager(std::unique_ptr<ICalibrationStrategy> strategy);
 
   // Prepares the device for calibration and waits for user confirmation
-  bool beginCalibration();
+  CalibrationResult beginCalibration();
 
   // Runs the full calibration process in a single step
-  bool runCalibration();
+  CalibrationResult runCalibration();
 
   // Converts a raw wind reading to calibrated degrees
   float getCalibratedData(float rawWindDirection) const;
@@ -36,9 +34,4 @@ public:
 private:
   std::unique_ptr<ICalibrationStrategy> calibrationStrategy;
   CalibrationStatus status;
-  IUserIO *_io;
-  IDiagnostics *_diag;
-
-  void promptUserStart() const;
-  void finishCalibrationMessage() const;
 };

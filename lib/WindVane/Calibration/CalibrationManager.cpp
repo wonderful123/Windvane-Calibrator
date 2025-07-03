@@ -1,27 +1,28 @@
 #include "Calibration/CalibrationManager.h"
-#include <iostream>
 
-CalibrationManager::CalibrationManager(std::unique_ptr<ICalibrationStrategy> strategy,
-                                       IUserIO *io, IDiagnostics *diag)
+CalibrationManager::CalibrationManager(std::unique_ptr<ICalibrationStrategy> strategy)
     : calibrationStrategy(std::move(strategy)),
-      status(CalibrationStatus::NotStarted),
-      _io(io), _diag(diag) {}
+      status(CalibrationStatus::NotStarted) {}
 
-bool CalibrationManager::beginCalibration() {
+CalibrationResult CalibrationManager::beginCalibration() {
+  CalibrationResult result{};
   if (status != CalibrationStatus::NotStarted &&
-      status != CalibrationStatus::Completed)
-    return false;
-  status = CalibrationStatus::AwaitingStart;
-  promptUserStart();
+      status != CalibrationStatus::Completed) {
+    result.error = "Calibration already running";
+    return result;
+  }
   status = CalibrationStatus::InProgress;
-  if (calibrationStrategy)
+  if (calibrationStrategy) {
     calibrationStrategy->calibrate();
+    result.success = true;
+  } else {
+    result.error = "No strategy";
+  }
   status = CalibrationStatus::Completed;
-  finishCalibrationMessage();
-  return true;
+  return result;
 }
 
-bool CalibrationManager::runCalibration() {
+CalibrationResult CalibrationManager::runCalibration() {
   return beginCalibration();
 }
 
@@ -31,27 +32,9 @@ float CalibrationManager::getCalibratedData(float rawWindDirection) const {
   return rawWindDirection * 360.0f;
 }
 
-void CalibrationManager::editCalibrationData(/*data*/) {
-  if (_io && _io->yesNoPrompt("Recalibrate now? (Y/N)")) {
-    beginCalibration();
-  }
-}
+void CalibrationManager::editCalibrationData(/*data*/) {}
 
 CalibrationManager::CalibrationStatus CalibrationManager::getStatus() const {
   return status;
 }
 
-void CalibrationManager::promptUserStart() const {
-  if (_diag)
-    _diag->info("Ready to calibrate. Press any key to start.");
-  if (_io) {
-    while (!_io->hasInput())
-      _io->waitMs(10);
-    _io->flushInput();
-  }
-}
-
-void CalibrationManager::finishCalibrationMessage() const {
-  if (_diag)
-    _diag->info("Calibration finished.");
-}

@@ -4,6 +4,7 @@
 #include "SettingsMenu.h"
 #include "WindVaneCompass.h"
 #include "WindVaneMenuDisplayController.h"
+#include <Calibration/CalibrationResult.h>
 #include <Platform/Platform.h>
 #include <Platform/IPlatform.h>
 
@@ -92,10 +93,15 @@ void WindVaneMenu::handleMainInput(char c) {
 
 void WindVaneMenu::runCalibration() {
   if (_io.yesNoPrompt("Start calibration? (Y/N)")) {
-    _vane.runCalibration();
-    _display.recordCalibration();
-    _diag.info("Calibration completed");
-    _display.setStatusMessage("Calibration complete", MenuStatusLevel::Normal);
+    CalibrationResult res = _vane.runCalibration();
+    if (res.success) {
+      _display.recordCalibration();
+      _diag.info("Calibration completed");
+      _display.setStatusMessage("Calibration complete", MenuStatusLevel::Normal);
+    } else {
+      _diag.warn(res.error.c_str());
+      _display.setStatusMessage(res.error.c_str(), MenuStatusLevel::Error);
+    }
   }
 }
 
