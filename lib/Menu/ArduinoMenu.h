@@ -41,6 +41,11 @@ private:
     void showDiagnostics();
     void settingsMenu();
     void showHelp();
+    char readCharBlocking();
+    void renderDiagnosticsScreen(size_t index);
+    void handleDiagnosticsAction(char c, size_t &index, bool &exit);
+    void showSettingsSummary();
+    bool handleSettingsSelection(char c);
     void selfTest();
     enum class StatusLevel { Normal, Warning, Error };
     void setStatusMessage(const char* msg, StatusLevel lvl = StatusLevel::Normal,
