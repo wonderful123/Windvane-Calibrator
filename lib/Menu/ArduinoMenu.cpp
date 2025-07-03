@@ -22,12 +22,17 @@ static const char* compassPoint(float deg) {
 }
 
 ArduinoMenu::ArduinoMenu(const ArduinoMenuConfig& cfg)
-    : _vane(cfg.vane), _io(cfg.io), _diag(cfg.diag), _out(cfg.out),
+    : _vane(cfg.vane),
+      _io(cfg.io),
+      _diag(cfg.diag),
+      _buffered(cfg.bufferedDiag),
+      _out(cfg.out),
       _storage(cfg.storage),
-      _settingsStorage(cfg.settingsStorage), _settings(cfg.settings),
-      _state(State::Main), _lastActivity(0), _lastCalibration(0) {
-    _buffered = dynamic_cast<IBufferedDiagnostics*>(cfg.diag);
-}
+      _settingsStorage(cfg.settingsStorage),
+      _settings(cfg.settings),
+      _state(State::Main),
+      _lastActivity(0),
+      _lastCalibration(0) {}
 
 void ArduinoMenu::begin() {
     showMainMenu();

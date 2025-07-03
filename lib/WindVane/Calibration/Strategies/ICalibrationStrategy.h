@@ -1,12 +1,14 @@
 #pragma once
 
+enum class CalibrationStrategyType {
+  Spinning,
+  // add others here
+};
+
 class ICalibrationStrategy {
-public:
+ public:
   virtual ~ICalibrationStrategy() = default;
-
-  // Starts the Calibration process of the wind vane.
   virtual void calibrate() = 0;
-
-  // Convert a raw ADC reading to a calibrated direction in degrees
   virtual float mapReading(float reading) const = 0;
+  virtual CalibrationStrategyType strategyType() const = 0;
 };

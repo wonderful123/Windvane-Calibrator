@@ -42,21 +42,21 @@ void WindVane::clearCalibration() {
         _storage->clear();
 }
 
-void WindVane::setCalibrationConfig(const SpinningConfig &cfg) {
-    if (_calibrationManager) {
-        auto strat = dynamic_cast<ISpinningConfigurable*>(
-            _calibrationManager->strategy());
-        if (strat)
-            strat->setConfig(cfg);
+void WindVane::setCalibrationConfig(const SpinningConfig& cfg) {
+  if (_calibrationManager) {
+    ICalibrationStrategy* strat = _calibrationManager->strategy();
+    if (strat->strategyType() == CalibrationStrategyType::Spinning) {
+      reinterpret_cast<ISpinningConfigurable*>(strat)->setConfig(cfg);
     }
+  }
 }
 
 SpinningConfig WindVane::getCalibrationConfig() const {
-    if (_calibrationManager) {
-        auto strat = dynamic_cast<ISpinningConfigurable*>(
-            _calibrationManager->strategy());
-        if (strat)
-            return strat->config();
+  if (_calibrationManager) {
+    ICalibrationStrategy* strat = _calibrationManager->strategy();
+    if (strat->strategyType() == CalibrationStrategyType::Spinning) {
+      return reinterpret_cast<ISpinningConfigurable*>(strat)->config();
     }
-    return {};
+  }
+  return {};
 }

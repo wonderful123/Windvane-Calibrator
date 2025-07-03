@@ -1,13 +1,13 @@
 #include <Arduino.h>
-#include <ArduinoMenu.h>
-#include <Diagnostics/BufferedDiagnostics.h>
-#include <Hardware/ESP32/ADC.h>
-#include <IO/SerialIOHandler.h>
-#include <IO/SerialOutput.h>
-#include <Settings/FileSettingsStorage.h>
-#include <Settings/SettingsData.h>
-#include <Storage/EEPROMCalibrationStorage.h>
-#include <WindVane.h>
+#include <Menu/ArduinoMenu.h>
+#include <WindVane/Diagnostics/BufferedDiagnostics.h>
+#include <WindVane/Hardware/ESP32/ADC.h>
+#include <WindVane/IO/SerialIOHandler.h>
+#include <WindVane/IO/SerialOutput.h>
+#include <WindVane/Settings/FileSettingsStorage.h>
+#include <WindVane/Settings/SettingsData.h>
+#include <WindVane/Storage/EEPROMCalibrationStorage.h>
+#include <WindVane/WindVane.h>
 
 #include <memory>
 
@@ -43,9 +43,10 @@ void setup() {
                          diag.get(),
                          settings.spin};
   windVane = std::make_unique<WindVane>(vaneCfg);
-  ArduinoMenuConfig menuCfg{windVane.get(), io.get(),      diag.get(),
-                            out.get(),      storage.get(), settingsStore.get(),
-                            &settings};
+  // ArduinoMenuConfig: pass diag.get() as both diag and bufferedDiag
+  ArduinoMenuConfig menuCfg{windVane.get(),      io.get(),  diag.get(),
+                            diag.get(),          out.get(), storage.get(),
+                            settingsStore.get(), &settings};
   menu = std::make_unique<ArduinoMenu>(menuCfg);
   menu->begin();
 }

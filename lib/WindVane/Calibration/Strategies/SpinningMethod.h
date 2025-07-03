@@ -29,6 +29,10 @@ class SpinningMethod : public ICalibrationStrategy, public ISpinningConfigurable
 public:
   explicit SpinningMethod(const SpinningMethodDeps &deps);
 
+  CalibrationStrategyType strategyType() const override {
+    return CalibrationStrategyType::Spinning;
+  }
+
   // Runs the interactive calibration procedure.
   void calibrate() override;
 
