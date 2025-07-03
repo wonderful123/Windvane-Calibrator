@@ -15,7 +15,9 @@ void DiagnosticsMenu::show(platform::TimeMs lastCalibration) const {
     while (!done) {
         renderScreen(index, lastCalibration);
         char c = readCharBlocking();
-        handleAction(c, index, done);
+        ActionResult r = handleAction(c, index);
+        index = r.index;
+        done = r.exit;
     }
 }
 
@@ -34,15 +36,16 @@ void DiagnosticsMenu::renderScreen(size_t index, platform::TimeMs lastCalibratio
     _view.render(model, index);
 }
 
-void DiagnosticsMenu::handleAction(char c, size_t &index, bool &exit) const {
+DiagnosticsMenu::ActionResult DiagnosticsMenu::handleAction(char c, size_t index) const {
+    ActionResult out{index, false};
     if (c=='N'||c=='n') {
-        if (_buffered && index+5<_buffered->get().history().size()) index+=5;
+        if (_buffered && index+5<_buffered->get().history().size()) out.index+=5;
     } else if (c=='P'||c=='p') {
-        if (index>=5) index-=5;
+        if (index>=5) out.index-=5;
     } else if (c=='C'||c=='c') {
         if (_buffered && _view.confirmClear()) {
             _buffered->get().clear();
-            index=0;
+            out.index=0;
         }
     } else if (c=='T'||c=='t') {
         SelfTestStatus st = selfTest();
@@ -51,8 +54,9 @@ void DiagnosticsMenu::handleAction(char c, size_t &index, bool &exit) const {
         else
             _diag.warn("Self-test failed");
     } else {
-        exit = true;
+        out.exit = true;
     }
+    return out;
 }
 
 DiagnosticsMenu::SelfTestStatus DiagnosticsMenu::selfTest() const {

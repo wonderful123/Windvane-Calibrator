@@ -12,6 +12,7 @@ public:
                     DiagnosticsView& view, IDiagnostics& diag);
     void show(platform::TimeMs lastCalibration) const;
     enum class SelfTestStatus { Ok, Failed };
+    struct ActionResult { size_t index; bool exit; };
 private:
     WindVane& _vane;
     std::optional<std::reference_wrapper<IBufferedDiagnostics>> _buffered;
@@ -20,6 +21,6 @@ private:
 
     void renderScreen(size_t index, platform::TimeMs lastCalibration) const;
     char readCharBlocking() const;
-    void handleAction(char c, size_t &index, bool &exit) const;
+    ActionResult handleAction(char c, size_t index) const;
     SelfTestStatus selfTest() const;
 };

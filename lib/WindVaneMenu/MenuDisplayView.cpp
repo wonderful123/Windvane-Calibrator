@@ -6,10 +6,9 @@ MenuDisplayView::MenuDisplayView(IPlatform& platform, IUserIO& io, IOutput& out,
                                  MenuPresenter& presenter)
     : _platform(platform), _io(io), _out(out), _presenter(presenter) {}
 
-bool MenuDisplayView::updateLiveDisplay(WindVane& vane) const {
-    static platform::TimeMs last = platform::TimeMs{0};
-    if (_platform.millis() - last > platform::TimeMs{1000}) {
-        last = _platform.millis();
+bool MenuDisplayView::updateLiveDisplay(WindVane& vane, MenuState& state) const {
+    if (_platform.millis() - state.lastDisplayUpdate > platform::TimeMs{1000}) {
+        state.lastDisplayUpdate = _platform.millis();
         float d = vane.getDirection();
         char buf[64];
         snprintf(buf, sizeof(buf), "\rDir: %.1f\xC2\xB0 (%s)   \r", d, compassPoint(d));

@@ -7,6 +7,7 @@
 #include "MenuPresenter.h"
 #include "MenuDisplayView.h"
 #include "MenuDisplayController.h"
+#include "MenuState.h"
 #include "MenuTypes.h"
 #include <Platform/IPlatform.h>
 #include <Storage/Settings/SettingsManager.h>
@@ -47,6 +48,7 @@ class WindVaneMenu {
 
   MenuLogic _logic;
   MenuPresenter _presenter;
+  MenuState _state;
   MenuDisplayView _view;
   MenuDisplayController _display;
   enum class State {
@@ -57,7 +59,6 @@ class WindVaneMenu {
     Settings,
     Help
   };
-  std::vector<State> _stateStack;
   std::unordered_map<char, std::function<void()>> _mainHandlers;
 
   void showMainMenu() const;

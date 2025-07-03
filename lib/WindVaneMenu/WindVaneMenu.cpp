@@ -24,15 +24,15 @@ WindVaneMenu::WindVaneMenu(const WindVaneMenuConfig& cfg)
       _logic(),
       _presenter(&cfg.out),
       _view(cfg.platform, cfg.io, cfg.out, _presenter),
-      _display(cfg.platform, _view, _logic),
-      _stateStack(),
+      _display(cfg.platform, _view, _logic, _state),
       _mainHandlers() {
+  _state.stack.clear();
   pushState(State::Main);
   initMainHandlers();
 }
 
 void WindVaneMenu::begin() {
-  _stateStack.clear();
+  _state.stack.clear();
   pushState(static_cast<State>(_settingsMgr.getMenuState()));
   showMainMenu();
   _display.begin(_vane);
@@ -167,21 +167,22 @@ void WindVaneMenu::showHelp() const {
 void WindVaneMenu::clearScreen() const { _out.clear(); }
 
 void WindVaneMenu::pushState(State s) {
-  _stateStack.push_back(s);
+  _state.stack.push_back(static_cast<PersistedMenuState>(s));
   _settingsMgr.setMenuState(static_cast<PersistedMenuState>(s));
   StorageResult res = _settingsMgr.save();
   if (!res.ok()) _diag.warn("Failed to persist menu state");
 }
 
 void WindVaneMenu::popState() {
-  if (!_stateStack.empty()) _stateStack.pop_back();
+  if (!_state.stack.empty()) _state.stack.pop_back();
   _settingsMgr.setMenuState(static_cast<PersistedMenuState>(currentState()));
   StorageResult res = _settingsMgr.save();
   if (!res.ok()) _diag.warn("Failed to persist menu state");
 }
 
 WindVaneMenu::State WindVaneMenu::currentState() const {
-  return _stateStack.empty() ? State::Main : _stateStack.back();
+  return _state.stack.empty() ? State::Main
+                              : static_cast<State>(_state.stack.back());
 }
 
 void WindVaneMenu::initMainHandlers() {
