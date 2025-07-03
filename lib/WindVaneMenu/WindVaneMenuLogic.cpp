@@ -1,6 +1,6 @@
 #include "WindVaneMenuLogic.h"
 
-#include "../Platform/Platform.h"
+#include <Platform/Platform.h>
 
 WindVaneStatus WindVaneMenuLogic::queryStatus(WindVane* vane, unsigned long lastCalibration) const {
     WindVaneStatus status;

@@ -22,7 +22,6 @@ WindVane::WindVane(const WindVaneConfig& cfg)
 
 // --- New: user-friendly alias for calibration ---
 void WindVane::calibrate() { runCalibration(); }
-#include "Calibration/Strategies/ISpinningConfigurable.h"
 
 float WindVane::direction() {
   float raw = getRawDirection();

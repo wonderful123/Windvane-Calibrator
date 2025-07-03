@@ -2,7 +2,7 @@
 #ifdef ARDUINO
 #include <Arduino.h>
 #endif
-#include "../../Platform/Platform.h"
+#include <Platform/Platform.h>
 
 EEPROMCalibrationStorage::EEPROMCalibrationStorage(size_t startAddress,
                                                    size_t eepromSize)

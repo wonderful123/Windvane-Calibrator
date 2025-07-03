@@ -1,5 +1,5 @@
 #include "WindVaneCompass.h"
-#include "../Platform/Platform.h"
+#include <Platform/Platform.h>
 #ifndef ARDUINO
 #include <cstdio>
 #endif
