@@ -32,10 +32,7 @@ void SpinningMethod::saveCalibration() const {
 }
 
 void SpinningMethod::calibrate() {
-  _diag->info("Align vane to forward reference and press any key to start.");
-  while (!_io->hasInput())
-    _io->waitMs(10);
-  _io->flushInput();
+  promptStart();
 
   const float threshold = _config.threshold;
   const int bufferSize = _config.bufferSize;
@@ -53,70 +50,101 @@ void SpinningMethod::calibrate() {
 
   while (!stop) {
     float reading = _adc->read();
-
-    auto now = std::chrono::steady_clock::now();
-    if (now - lastIncrease > stallTimeout) {
-      if (_io->yesNoPrompt("No new positions detected for a while. Stop and save calibration? (Y/N)"))
-        stop = true;
-      else
-        lastIncrease = now;
-    }
+    if (checkStall(std::chrono::steady_clock::now(), lastIncrease, stallTimeout))
+      stop = true;
 
     if (reading <= 0.0f || reading >= 1.0f) {
       _clusterMgr.recordAnomaly();
     } else {
-      _recent.push_back(reading);
-      if (_recent.size() > bufferSize)
-        _recent.pop_front();
+      updateClusters(reading, threshold, bufferSize, expectedPositions,
+                    previousCount, lastIncrease, stop);
 
-      int inRange = 0;
-      for (float r : _recent) {
-        if (std::fabs(r - reading) < threshold)
-          ++inRange;
-      }
-
-      if (inRange > static_cast<int>(_recent.size()) / 2) {
-        bool added = _clusterMgr.addOrUpdate(reading, threshold);
-        if (_clusterMgr.clusters().size() != previousCount) {
-          std::string msg = "Position detected: " +
-                            std::to_string(_clusterMgr.clusters().size()) + "/" +
-                            std::to_string(expectedPositions);
-          _diag->info(msg.c_str());
-          previousCount = _clusterMgr.clusters().size();
-          lastIncrease = std::chrono::steady_clock::now();
-          if (_clusterMgr.clusters().size() >= static_cast<size_t>(expectedPositions)) {
-            if (_io->yesNoPrompt("All expected positions detected. Stop now? (Y/N)"))
-              stop = true;
-          }
-        }
-        (void)added;
-      }
-
-      if (prevReading >= 0 && reading < prevReading) {
+      if (prevReading >= 0 && reading < prevReading)
         _diag->warn("Warning: reverse rotation detected");
-      }
       prevReading = reading;
     }
 
-    if (_io->hasInput()) {
-      char c = _io->readInput();
-      if (c == 's' || c == 'S') {
-        bool confirm = true;
-        if (_clusterMgr.clusters().size() != static_cast<size_t>(expectedPositions))
-          confirm = _io->yesNoPrompt("Calibration incomplete. Stop anyway? (Y/N)");
-        if (confirm)
-          stop = true;
-      } else if (c == 'q' || c == 'Q') {
-        abort = true;
-        stop = true;
-      }
-    }
+    handleUserCommand(stop, abort, expectedPositions);
     _io->waitMs(sampleDelay.count());
   }
 
+  finalizeCalibration(abort, threshold * 1.5f);
+}
+
+float SpinningMethod::mapReading(float reading) const {
+  return _clusterMgr.interpolate(reading);
+}
+
+void SpinningMethod::promptStart() const {
+  _diag->info("Align vane to forward reference and press any key to start.");
+  while (!_io->hasInput())
+    _io->waitMs(10);
+  _io->flushInput();
+}
+
+bool SpinningMethod::checkStall(std::chrono::steady_clock::time_point now,
+                                std::chrono::steady_clock::time_point &last,
+                                const std::chrono::seconds &timeout) const {
+  if (now - last > timeout) {
+    if (_io->yesNoPrompt("No new positions detected for a while. Stop and save calibration? (Y/N)"))
+      return true;
+    last = now;
+  }
+  return false;
+}
+
+void SpinningMethod::updateClusters(float reading, float threshold, int bufferSize,
+                                    int expectedPositions, size_t &prevCount,
+                                    std::chrono::steady_clock::time_point &lastIncrease,
+                                    bool &stop) {
+  _recent.push_back(reading);
+  if (_recent.size() > static_cast<size_t>(bufferSize))
+    _recent.pop_front();
+
+  int inRange = 0;
+  for (float r : _recent) {
+    if (std::fabs(r - reading) < threshold)
+      ++inRange;
+  }
+
+  if (inRange > static_cast<int>(_recent.size()) / 2) {
+    bool added = _clusterMgr.addOrUpdate(reading, threshold);
+    if (_clusterMgr.clusters().size() != prevCount) {
+      std::string msg = "Position detected: " +
+                        std::to_string(_clusterMgr.clusters().size()) + "/" +
+                        std::to_string(expectedPositions);
+      _diag->info(msg.c_str());
+      prevCount = _clusterMgr.clusters().size();
+      lastIncrease = std::chrono::steady_clock::now();
+      if (_clusterMgr.clusters().size() >= static_cast<size_t>(expectedPositions)) {
+        if (_io->yesNoPrompt("All expected positions detected. Stop now? (Y/N)"))
+          stop = true;
+      }
+    }
+    (void)added;
+  }
+}
+
+void SpinningMethod::handleUserCommand(bool &stop, bool &abort, int expectedPositions) {
+  if (!_io->hasInput())
+    return;
+  char c = _io->readInput();
+  if (c == 's' || c == 'S') {
+    bool confirm = true;
+    if (_clusterMgr.clusters().size() != static_cast<size_t>(expectedPositions))
+      confirm = _io->yesNoPrompt("Calibration incomplete. Stop anyway? (Y/N)");
+    if (confirm)
+      stop = true;
+  } else if (c == 'q' || c == 'Q') {
+    abort = true;
+    stop = true;
+  }
+}
+
+void SpinningMethod::finalizeCalibration(bool abort, float mergeThreshold) {
   _diag->info("Calibration stopped.");
 
-  _clusterMgr.mergeAndPrune(threshold * 1.5f, 2);
+  _clusterMgr.mergeAndPrune(mergeThreshold, 2);
   if (!abort) {
     _clusterMgr.diagnostics(*_diag);
     if (_io->yesNoPrompt("Save calibration results? (Y/N)"))
@@ -126,8 +154,4 @@ void SpinningMethod::calibrate() {
   } else {
     _diag->info("Calibration aborted. Previous data preserved.");
   }
-}
-
-float SpinningMethod::mapReading(float reading) const {
-  return _clusterMgr.interpolate(reading);
 }

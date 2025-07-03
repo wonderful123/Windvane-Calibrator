@@ -3,6 +3,7 @@
 #include <deque>
 #include <vector>
 #include <cstdint>
+#include <chrono>
 #include "../ClusterData.h"
 #include "../ClusterManager.h"
 #include "../../Storage/ICalibrationStorage.h"
@@ -48,4 +49,15 @@ private:
   SpinningConfig _config;
 
   void saveCalibration() const;
+
+  void promptStart() const;
+  bool checkStall(std::chrono::steady_clock::time_point now,
+                  std::chrono::steady_clock::time_point &last,
+                  const std::chrono::seconds &timeout) const;
+  void updateClusters(float reading, float threshold, int bufferSize,
+                      int expectedPositions, size_t &prevCount,
+                      std::chrono::steady_clock::time_point &lastIncrease,
+                      bool &stop);
+  void handleUserCommand(bool &stop, bool &abort, int expectedPositions);
+  void finalizeCalibration(bool abort, float mergeThreshold);
 };
