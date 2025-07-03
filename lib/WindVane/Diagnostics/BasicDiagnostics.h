@@ -9,7 +9,7 @@ public:
         if (!_out) return;
         const char* lvl = ev.level == LogLevel::Info ? "INFO" : "WARN";
         char buf[128];
-        snprintf(buf, sizeof(buf), "[%lu] %s: %s",
+        snprintf(buf, sizeof(buf), "[%u] %s: %s",
                  platform::toEmbedded(ev.timestamp), lvl, ev.message.c_str());
         _out->writeln(buf);
     }

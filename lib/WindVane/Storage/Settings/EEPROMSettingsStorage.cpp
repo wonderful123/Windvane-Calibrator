@@ -7,9 +7,14 @@ StorageResult EEPROMSettingsStorage::save(const SettingsData& data) {
 #ifdef ARDUINO
     EEPROM.begin(_size);
     size_t addr = _start;
-    EEPROM.put(addr, data.spin); addr += sizeof(SpinningConfig);
+    SettingsStorageHeader hdr{};
+    hdr.version = 1;
+    hdr.crc = SettingsStorageBase::crc32(reinterpret_cast<const unsigned char*>(&data), sizeof(data));
+    EEPROM.put(addr, hdr); addr += sizeof(SettingsStorageHeader);
+    EEPROM.put(addr, data); addr += sizeof(SettingsData);
     EEPROM.commit();
     EEPROM.end();
+    _schemaVersion = hdr.version;
     return {};
 #else
     (void)data;
@@ -21,8 +26,14 @@ StorageResult EEPROMSettingsStorage::load(SettingsData& data) {
 #ifdef ARDUINO
     EEPROM.begin(_size);
     size_t addr = _start;
-    EEPROM.get(addr, data.spin); addr += sizeof(SpinningConfig);
+    SettingsStorageHeader hdr{};
+    EEPROM.get(addr, hdr); addr += sizeof(SettingsStorageHeader);
+    EEPROM.get(addr, data); addr += sizeof(SettingsData);
     EEPROM.end();
+    uint32_t crc = SettingsStorageBase::crc32(reinterpret_cast<const unsigned char*>(&data), sizeof(data));
+    if (crc != hdr.crc)
+        return {StorageStatus::CorruptData, "crc"};
+    _schemaVersion = hdr.version;
     return {};
 #else
     (void)data;

@@ -7,4 +7,5 @@ public:
     virtual ~ISettingsStorage() = default;
     virtual StorageResult save(const SettingsData& data) = 0;
     virtual StorageResult load(SettingsData& data) = 0;
+    virtual int getSchemaVersion() const = 0;
 };

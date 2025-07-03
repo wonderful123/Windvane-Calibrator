@@ -23,6 +23,9 @@ public:
     int spinSampleDelayMs() const;
     int spinStallTimeoutSec() const;
 
+    PersistedMenuState menuState() const { return _data.menuState; }
+    void setMenuState(PersistedMenuState s);
+
     void setSpinThreshold(float v);
     void setSpinBufferSize(int v);
     void setSpinExpectedPositions(int v);

@@ -34,7 +34,7 @@ WindVaneMenu::WindVaneMenu(const WindVaneMenuConfig& cfg)
 
 void WindVaneMenu::begin() {
   _stateStack.clear();
-  pushState(State::Main);
+  pushState(static_cast<State>(_settingsMgr.menuState()));
   showMainMenu();
   _display.begin(_vane);
 }
@@ -168,10 +168,16 @@ void WindVaneMenu::showHelp() const {
 
 void WindVaneMenu::clearScreen() const { _out.clear(); }
 
-void WindVaneMenu::pushState(State s) { _stateStack.push_back(s); }
+void WindVaneMenu::pushState(State s) {
+  _stateStack.push_back(s);
+  _settingsMgr.setMenuState(static_cast<PersistedMenuState>(s));
+  _settingsMgr.save();
+}
 
 void WindVaneMenu::popState() {
   if (!_stateStack.empty()) _stateStack.pop_back();
+  _settingsMgr.setMenuState(static_cast<PersistedMenuState>(currentState()));
+  _settingsMgr.save();
 }
 
 WindVaneMenu::State WindVaneMenu::currentState() const {

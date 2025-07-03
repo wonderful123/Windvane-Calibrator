@@ -57,10 +57,17 @@ void SettingsManager::setSpinStallTimeoutSec(int v) {
     ensureValid();
 }
 
+void SettingsManager::setMenuState(PersistedMenuState s) {
+    _data.menuState = s;
+}
+
 void SettingsManager::ensureValid() {
     if (_data.spin.bufferSize < 1) _data.spin.bufferSize = 1;
     if (_data.spin.expectedPositions < 1) _data.spin.expectedPositions = 1;
     if (_data.spin.sampleDelayMs < 1) _data.spin.sampleDelayMs = 1;
     if (_data.spin.stallTimeoutSec < 1) _data.spin.stallTimeoutSec = 1;
     if (_data.spin.threshold < 0.f) _data.spin.threshold = 0.f;
+    if (static_cast<int>(_data.menuState) < 0 ||
+        static_cast<int>(_data.menuState) > static_cast<int>(PersistedMenuState::Help))
+        _data.menuState = PersistedMenuState::Main;
 }
