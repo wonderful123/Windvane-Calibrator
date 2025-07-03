@@ -5,6 +5,7 @@
 #include <WindVane.h>
 #include "WindVaneMenuLogic.h"
 #include "WindVaneMenuPresenter.h"
+#include "WindVaneMenuDisplayController.h"
 #include "WindVaneMenuTypes.h"
 #include <Platform/IPlatform.h>
 #include <Storage/Settings/SettingsManager.h>
@@ -44,6 +45,7 @@ class WindVaneMenu {
 
   WindVaneMenuLogic _logic;
   WindVaneMenuPresenter _presenter;
+  WindVaneMenuDisplayController _display;
   enum class State {
     Main,
     LiveDisplay,
@@ -54,18 +56,10 @@ class WindVaneMenu {
   };
   std::vector<State> _stateStack;
   std::unordered_map<char, std::function<void()>> _mainHandlers;
-  unsigned long _lastActivity;
-  unsigned long _lastCalibration;
 
-  std::string _statusMsg;
-  MenuStatusLevel _statusLevel{MenuStatusLevel::Normal};
-  unsigned long _msgExpiry{0};
-
-  void showStatusLine();
   void showMainMenu();
   void handleMainInput(char c);
-  void updateLiveDisplay();
-  void clearExpiredMessage();
+
   void runCalibration();
   void handleDisplaySelection();
   void handleCalibrateSelection();
@@ -75,8 +69,6 @@ class WindVaneMenu {
   void handleUnknownSelection();
   void showHelp();
   void clearScreen();
-  void setStatusMessage(const char* msg, MenuStatusLevel lvl = MenuStatusLevel::Normal,
-                        unsigned long ms = 3000);
   void pushState(State s);
   void popState();
   State currentState() const;

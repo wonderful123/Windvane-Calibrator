@@ -3,6 +3,7 @@
 #include "DiagnosticsMenu.h"
 #include "SettingsMenu.h"
 #include "WindVaneCompass.h"
+#include "WindVaneMenuDisplayController.h"
 #include <Platform/Platform.h>
 #include <Platform/IPlatform.h>
 
@@ -22,11 +23,10 @@ WindVaneMenu::WindVaneMenu(const WindVaneMenuConfig& cfg)
       _settingsMgr(cfg.settingsMgr),
       _platform(cfg.platform),
       _logic(),
-        _presenter(&cfg.out),
-        _stateStack(),
-        _mainHandlers(),
-        _lastActivity(0),
-        _lastCalibration(0) {
+      _presenter(&cfg.out),
+      _display(cfg.platform, cfg.io, cfg.out, _presenter, _logic),
+      _stateStack(),
+      _mainHandlers() {
   pushState(State::Main);
   initMainHandlers();
 }
@@ -35,14 +35,13 @@ void WindVaneMenu::begin() {
   _stateStack.clear();
   pushState(State::Main);
   showMainMenu();
-  _lastActivity = _platform.millis();
-  _lastCalibration = _vane.lastCalibrationTimestamp();
+  _display.begin(_vane);
 }
 
 void WindVaneMenu::update() {
   if (_io.hasInput()) {
     char c = _io.readInput();
-    _lastActivity = _platform.millis();
+    _display.onInput();
     if (currentState() == State::Main) {
       handleMainInput(c);
     } else if (currentState() == State::LiveDisplay) {
@@ -51,20 +50,16 @@ void WindVaneMenu::update() {
     }
   }
   if (currentState() == State::LiveDisplay) {
-    updateLiveDisplay();
+    if (_display.updateLiveDisplay(_vane)) {
+      popState();
+      showMainMenu();
+    }
   }
-  if (_platform.millis() - _lastActivity > 30000 && currentState() != State::Main) {
+  if (_display.checkTimeout() && currentState() != State::Main) {
     while (currentState() != State::Main) popState();
     showMainMenu();
   }
-  showStatusLine();
-}
-
-void WindVaneMenu::showStatusLine() {
-  WindVaneStatus st = _logic.queryStatus(_vane, _lastCalibration, _platform);
-  const char* statusStr = _logic.statusText(st.calibrationStatus);
-  _platform.renderStatusLine(_presenter, st, statusStr, _statusMsg, _statusLevel);
-  clearExpiredMessage();
+  _display.showStatusLine(_vane);
 }
 
 void WindVaneMenu::showMainMenu() {
@@ -94,37 +89,13 @@ void WindVaneMenu::handleMainInput(char c) {
   }
 }
 
-void WindVaneMenu::updateLiveDisplay() {
-  static unsigned long last = 0;
-  if (_platform.millis() - last > 1000) {
-    last = _platform.millis();
-    float d = _vane.direction();
-    char buf[64];
-    snprintf(buf, sizeof(buf), "\rDir: %.1f\xC2\xB0 (%s)   \r", d,
-             compassPoint(d));
-    _out.write(buf);
-  }
-  if (_io.hasInput()) {
-    _io.readInput();
-    popState();
-    showMainMenu();
-  }
-}
-
-
-void WindVaneMenu::clearExpiredMessage() {
-  if (!_statusMsg.empty() && _platform.millis() >= _msgExpiry) {
-    _statusMsg.clear();
-    _statusLevel = MenuStatusLevel::Normal;
-  }
-}
 
 void WindVaneMenu::runCalibration() {
   if (_io.yesNoPrompt("Start calibration? (Y/N)")) {
     _vane.runCalibration();
-    _lastCalibration = _platform.millis();
+    _display.recordCalibration();
     _diag.info("Calibration completed");
-    setStatusMessage("Calibration complete", MenuStatusLevel::Normal);
+    _display.setStatusMessage("Calibration complete", MenuStatusLevel::Normal);
   }
 }
 
@@ -132,7 +103,7 @@ void WindVaneMenu::handleDisplaySelection() {
   pushState(State::LiveDisplay);
   if (_vane.calibrationStatus() !=
       CalibrationManager::CalibrationStatus::Completed)
-    setStatusMessage("Warning: uncalibrated", MenuStatusLevel::Warning);
+    _display.setStatusMessage("Warning: uncalibrated", MenuStatusLevel::Warning);
   _out.writeln("Live direction - press any key to return");
 }
 
@@ -146,7 +117,7 @@ void WindVaneMenu::handleCalibrateSelection() {
 void WindVaneMenu::handleDiagnosticsSelection() {
   pushState(State::Diagnostics);
   DiagnosticsMenu menu(_vane, _io, _buffered, _diag, _out, _platform);
-  menu.show(_lastCalibration);
+  menu.show(_display.lastCalibration());
   popState();
   showMainMenu();
 }
@@ -166,7 +137,8 @@ void WindVaneMenu::handleHelpSelection() {
 }
 
 void WindVaneMenu::handleUnknownSelection() {
-  setStatusMessage("Unknown option. Press [H] for help.", MenuStatusLevel::Error);
+  _display.setStatusMessage("Unknown option. Press [H] for help.",
+                            MenuStatusLevel::Error);
 }
 
 void WindVaneMenu::showHelp() {
@@ -179,13 +151,6 @@ void WindVaneMenu::showHelp() {
 }
 
 void WindVaneMenu::clearScreen() { _out.clear(); }
-
-void WindVaneMenu::setStatusMessage(const char* msg, MenuStatusLevel lvl,
-                                    unsigned long ms) {
-  _statusMsg = msg;
-  _statusLevel = lvl;
-  _msgExpiry = _platform.millis() + ms;
-}
 
 void WindVaneMenu::pushState(State s) { _stateStack.push_back(s); }
 
