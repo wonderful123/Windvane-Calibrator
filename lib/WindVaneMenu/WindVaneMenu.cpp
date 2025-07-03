@@ -32,6 +32,8 @@ WindVaneMenu::WindVaneMenu(const WindVaneMenuConfig& cfg)
       _settingsStorage(cfg.settingsStorage),
       _settings(cfg.settings),
       _numeric(cfg.numeric),  // <-- ASSIGN _numeric from config
+      _logic(),
+      _presenter(cfg.out),
       _state(State::Main),
       _lastActivity(0),
       _lastCalibration(0) {}
@@ -73,13 +75,12 @@ void WindVaneMenu::update() {
 }
 
 void WindVaneMenu::showStatusLine() {
-  float dir = _vane->direction();
-  unsigned long ago = (millis() - _lastCalibration) / 60000UL;
-  const char* st = statusText(_vane->calibrationStatus());
+  WindVaneStatus st = _logic.queryStatus(_vane, _lastCalibration);
+  const char* statusStr = _logic.statusText(st.calibrationStatus);
 #ifdef ARDUINO
-  renderStatusLineArduino(dir, st, ago);
+  _presenter.renderStatusLineArduino(st, statusStr, _statusMsg, _statusLevel);
 #else
-  renderStatusLineHost(dir, st, ago);
+  _presenter.renderStatusLineHost(st, statusStr, _statusMsg, _statusLevel);
 #endif
   clearExpiredMessage();
 }
@@ -147,64 +148,11 @@ void WindVaneMenu::updateLiveDisplay() {
   }
 }
 
-const char* WindVaneMenu::statusText(
-    CalibrationManager::CalibrationStatus st) const {
-  switch (st) {
-    case CalibrationManager::CalibrationStatus::NotStarted:
-      return "Uncal";
-    case CalibrationManager::CalibrationStatus::AwaitingStart:
-      return "Awaiting";
-    case CalibrationManager::CalibrationStatus::InProgress:
-      return "Calibrating";
-    case CalibrationManager::CalibrationStatus::Completed:
-      return "OK";
-  }
-  return "Unknown";
-}
-
-void WindVaneMenu::renderStatusLineArduino(float dir, const char* statusStr,
-                                          unsigned long ago) {
-  char line[80];
-  snprintf(line, sizeof(line),
-           "\rDir:%6.1f\xC2\xB0 %-2s Status:%-10s Cal:%4lum", dir,
-           compassPoint(dir), statusStr, ago);
-  _out->write(line);
-  if (!_statusMsg.empty() && millis() < _msgExpiry) {
-    if (_statusLevel != StatusLevel::Normal) _out->write(" !! ");
-    _out->write(_statusMsg.c_str());
-  }
-  _out->write("    \r");
-}
-
-void WindVaneMenu::renderStatusLineHost(float dir, const char* statusStr,
-                                       unsigned long ago) {
-  char line[80];
-  snprintf(line, sizeof(line),
-           "\rDir:%6.1f\xC2\xB0 %-2s Status:%-10s Cal:%4lum", dir,
-           compassPoint(dir), statusStr, ago);
-  _out->write(line);
-  if (!_statusMsg.empty() && millis() < _msgExpiry) {
-    const char* color = "";
-    const char* reset = "";
-    if (_statusLevel == StatusLevel::Warning) {
-      color = "\033[33m";
-      reset = "\033[0m";
-    } else if (_statusLevel == StatusLevel::Error) {
-      color = "\033[31m";
-      reset = "\033[0m";
-    }
-    _out->write(" ");
-    _out->write(color);
-    _out->write(_statusMsg.c_str());
-    _out->write(reset);
-  }
-  _out->write("    \r");
-}
 
 void WindVaneMenu::clearExpiredMessage() {
   if (!_statusMsg.empty() && millis() >= _msgExpiry) {
     _statusMsg.clear();
-    _statusLevel = StatusLevel::Normal;
+    _statusLevel = MenuStatusLevel::Normal;
   }
 }
 
@@ -213,7 +161,7 @@ void WindVaneMenu::runCalibration() {
     _vane->runCalibration();
     _lastCalibration = millis();
     if (_diag) _diag->info("Calibration completed");
-    setStatusMessage("Calibration complete", StatusLevel::Normal);
+    setStatusMessage("Calibration complete", MenuStatusLevel::Normal);
   }
 }
 
@@ -221,7 +169,7 @@ void WindVaneMenu::handleDisplaySelection() {
   _state = State::LiveDisplay;
   if (_vane->calibrationStatus() !=
       CalibrationManager::CalibrationStatus::Completed)
-    setStatusMessage("Warning: uncalibrated", StatusLevel::Warning);
+    setStatusMessage("Warning: uncalibrated", MenuStatusLevel::Warning);
   _out->writeln("Live direction - press any key to return");
 }
 
@@ -257,7 +205,7 @@ void WindVaneMenu::handleHelpSelection() {
 }
 
 void WindVaneMenu::handleUnknownSelection() {
-  setStatusMessage("Unknown option. Press [H] for help.", StatusLevel::Error);
+  setStatusMessage("Unknown option. Press [H] for help.", MenuStatusLevel::Error);
 }
 
 void WindVaneMenu::showHelp() {
@@ -271,7 +219,7 @@ void WindVaneMenu::showHelp() {
 
 void WindVaneMenu::clearScreen() { _out->clear(); }
 
-void WindVaneMenu::setStatusMessage(const char* msg, StatusLevel lvl,
+void WindVaneMenu::setStatusMessage(const char* msg, MenuStatusLevel lvl,
                                    unsigned long ms) {
   _statusMsg = msg;
   _statusLevel = lvl;

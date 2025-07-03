@@ -8,6 +8,9 @@
 #include <Settings/SettingsData.h>
 #include <Storage/ICalibrationStorage.h>
 #include <WindVane.h>
+#include "WindVaneMenuLogic.h"
+#include "WindVaneMenuPresenter.h"
+#include "WindVaneMenuTypes.h"
 
 #include <string>
 
@@ -40,6 +43,8 @@ class WindVaneMenu {
   SettingsData* _settings;
   INumericReader* _numeric;  // <-- DECLARE _numeric
 
+  WindVaneMenuLogic _logic;
+  WindVaneMenuPresenter _presenter;
   enum class State {
     Main,
     LiveDisplay,
@@ -52,20 +57,14 @@ class WindVaneMenu {
   unsigned long _lastActivity;
   unsigned long _lastCalibration;
 
-  enum class StatusLevel { Normal, Warning, Error };
   std::string _statusMsg;
-  StatusLevel _statusLevel{StatusLevel::Normal};
+  MenuStatusLevel _statusLevel{MenuStatusLevel::Normal};
   unsigned long _msgExpiry{0};
 
   void showStatusLine();
   void showMainMenu();
   void handleMainInput(char c);
   void updateLiveDisplay();
-  const char* statusText(CalibrationManager::CalibrationStatus st) const;
-  void renderStatusLineArduino(float dir, const char* statusStr,
-                               unsigned long ago);
-  void renderStatusLineHost(float dir, const char* statusStr,
-                            unsigned long ago);
   void clearExpiredMessage();
   void runCalibration();
   void handleDisplaySelection();
@@ -76,6 +75,6 @@ class WindVaneMenu {
   void handleUnknownSelection();
   void showHelp();
   void clearScreen();
-  void setStatusMessage(const char* msg, StatusLevel lvl = StatusLevel::Normal,
+  void setStatusMessage(const char* msg, MenuStatusLevel lvl = MenuStatusLevel::Normal,
                         unsigned long ms = 3000);
 };
