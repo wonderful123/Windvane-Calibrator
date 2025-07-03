@@ -1,6 +1,6 @@
 #include "DiagnosticsMenu.h"
 #include <Platform/Platform.h>
-#include <IO/IOutput.h>
+#include <IO/IIO.h>
 #ifndef ARDUINO
 #include <iostream>
 #include <limits>

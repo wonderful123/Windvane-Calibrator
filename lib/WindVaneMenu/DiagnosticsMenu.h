@@ -1,9 +1,7 @@
 #pragma once
 #include <WindVane.h>
-#include <IO/IIOHandler.h>
-#include <Diagnostics/IBufferedDiagnostics.h>
+#include <IO/IIO.h>
 #include <Diagnostics/IDiagnostics.h>
-#include <IO/IOutput.h>
 
 class DiagnosticsMenu {
 public:

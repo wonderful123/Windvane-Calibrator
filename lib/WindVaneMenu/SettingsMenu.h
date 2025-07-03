@@ -1,6 +1,5 @@
 #pragma once
-#include <IO/IUserIO.h>
-#include <IO/IOutput.h>
+#include <IO/IIO.h>
 #include <Storage/ICalibrationStorage.h>
 #include <WindVane.h>
 #include <Settings/SettingsManager.h>

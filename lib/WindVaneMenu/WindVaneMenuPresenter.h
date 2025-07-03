@@ -1,7 +1,7 @@
 #pragma once
 #include "WindVaneStatus.h"
 #include "WindVaneMenuTypes.h"
-#include <IO/IOutput.h>
+#include <IO/IIO.h>
 #include <string>
 
 class WindVaneMenuPresenter {

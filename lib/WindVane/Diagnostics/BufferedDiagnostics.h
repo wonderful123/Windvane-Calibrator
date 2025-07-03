@@ -1,6 +1,5 @@
 #pragma once
 #include "IDiagnostics.h"
-#include "IBufferedDiagnostics.h"
 #include <deque>
 #include <string>
 #ifdef ARDUINO

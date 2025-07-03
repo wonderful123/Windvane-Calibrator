@@ -36,17 +36,23 @@ void SpinningMethod::calibrate() {
   const std::chrono::milliseconds sampleDelay(_config.sampleDelayMs);
   const std::chrono::seconds stallTimeout(_config.stallTimeoutSec);
 
+  runSession(state, sampleDelay, stallTimeout);
+
+  finalizeCalibration(state.abort, _config.threshold * 1.5f);
+}
+
+void SpinningMethod::runSession(SessionState &state,
+                                std::chrono::milliseconds delay,
+                                std::chrono::seconds timeout) {
   while (!state.stop) {
     float reading = _adc->read();
     if (checkStall(std::chrono::steady_clock::now(), state.lastIncrease,
-                   stallTimeout))
+                   timeout))
       state.stop = true;
 
     processReading(reading, state);
-    std::this_thread::sleep_for(sampleDelay);
+    std::this_thread::sleep_for(delay);
   }
-
-  finalizeCalibration(state.abort, _config.threshold * 1.5f);
 }
 
 float SpinningMethod::mapReading(float reading) const {

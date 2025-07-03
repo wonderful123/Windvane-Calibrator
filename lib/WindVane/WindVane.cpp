@@ -5,7 +5,7 @@
 #include "Calibration/Strategies/ISpinningConfigurable.h"
 #include "Calibration/StrategyFactory.h"
 #include "Diagnostics/IDiagnostics.h"
-#include "IO/IIOHandler.h"
+#include "IO/IIO.h"
 #include "Storage/ICalibrationStorage.h"
 
 // No default hardware instantiation here; all dependencies must be injected

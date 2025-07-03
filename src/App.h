@@ -2,9 +2,8 @@
 #include <WindVane.h>
 #include <memory>
 #include <WindVaneMenu.h>
-#include <IO/IUserIO.h>
+#include <IO/IIO.h>
 #include <Diagnostics/IDiagnostics.h>
-#include <IO/IOutput.h>
 #include <Storage/ICalibrationStorage.h>
 #include <Settings/SettingsManager.h>
 

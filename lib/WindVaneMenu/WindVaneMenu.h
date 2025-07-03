@@ -1,8 +1,6 @@
 #pragma once
-#include <Diagnostics/IBufferedDiagnostics.h>
 #include <Diagnostics/IDiagnostics.h>
-#include <IO/IUserIO.h>
-#include <IO/IOutput.h>
+#include <IO/IIO.h>
 #include <Storage/ICalibrationStorage.h>
 #include <WindVane.h>
 #include "WindVaneMenuLogic.h"

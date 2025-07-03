@@ -1,5 +1,5 @@
 #pragma once
-#include "IOutput.h"
+#include "IIO.h"
 #ifdef ARDUINO
 #include <Arduino.h>
 #endif

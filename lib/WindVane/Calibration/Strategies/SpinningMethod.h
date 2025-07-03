@@ -65,6 +65,8 @@ private:
                   const std::chrono::seconds &timeout) const;
   void updateClusters(float reading, SessionState &state);
   void finalizeCalibration(bool abort, float mergeThreshold);
+  void runSession(SessionState &state, std::chrono::milliseconds delay,
+                  std::chrono::seconds timeout);
   void processReading(float reading, SessionState &state);
   void initSession(SessionState &state);
 };
