@@ -1,4 +1,6 @@
 #include "ArduinoMenu.h"
+#include "DiagnosticsMenu.h"
+#include "SettingsMenu.h"
 
 #ifdef ARDUINO
 #include <Arduino.h>
@@ -199,14 +201,16 @@ void ArduinoMenu::handleCalibrateSelection() {
 
 void ArduinoMenu::handleDiagnosticsSelection() {
     _state = State::Diagnostics;
-    showDiagnostics();
+    DiagnosticsMenu menu(_vane, _io, _buffered, _diag);
+    menu.show(_lastCalibration);
     _state = State::Main;
     showMainMenu();
 }
 
 void ArduinoMenu::handleSettingsSelectionMenu() {
     _state = State::Settings;
-    settingsMenu();
+    SettingsMenu menu(_vane, _io, _storage, _settingsStorage, _settings);
+    menu.run();
     _state = State::Main;
     showMainMenu();
 }
@@ -222,32 +226,6 @@ void ArduinoMenu::handleUnknownSelection() {
     setStatusMessage("Unknown option. Press [H] for help.", StatusLevel::Error);
 }
 
-void ArduinoMenu::showDiagnostics() {
-#ifdef ARDUINO
-    size_t index = 0;
-    bool done = false;
-    while (!done) {
-        renderDiagnosticsScreen(index);
-        char c = readCharBlocking();
-        handleDiagnosticsAction(c, index, done);
-    }
-#endif
-}
-
-void ArduinoMenu::settingsMenu() {
-#ifdef ARDUINO
-    showSettingsSummary();
-    Serial.println("[1] Threshold  [2] Detents  [3] Smoothing");
-    Serial.println("[F] Factory reset  [B] Back");
-    bool done = false;
-    while (!done) {
-        char c = readCharBlocking();
-        done = handleSettingsSelection(c);
-    }
-    if (_settingsStorage) _settingsStorage->save(*_settings);
-    _vane->setCalibrationConfig(_settings->spin);
-#endif
-}
 
 void ArduinoMenu::showHelp() {
 #ifdef ARDUINO
@@ -274,119 +252,3 @@ void ArduinoMenu::setStatusMessage(const char* msg, StatusLevel lvl, unsigned lo
     _msgExpiry = millis() + ms;
 }
 
-float ArduinoMenu::readFloat() {
-#ifdef ARDUINO
-    while (!Serial.available()) _io->waitMs(10);
-    float v = Serial.parseFloat();
-    Serial.readStringUntil('\n');
-    return v;
-#else
-    float v; std::cin >> v; std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); return v;
-#endif
-}
-
-int ArduinoMenu::readInt() {
-#ifdef ARDUINO
-    while (!Serial.available()) _io->waitMs(10);
-    int v = Serial.parseInt();
-    Serial.readStringUntil('\n');
-    return v;
-#else
-    int v; std::cin >> v; std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); return v;
-#endif
-}
-
-void ArduinoMenu::selfTest() {
-    bool ok = true;
-    float d = _vane->direction();
-    if (d < 0 || d >= 360) ok = false;
-    if (ok) {
-        if (_diag) _diag->info("Self-test OK");
-    } else {
-        if (_diag) _diag->warn("Self-test failed");
-    }
-}
-
-char ArduinoMenu::readCharBlocking() {
-    while (!_io->hasInput())
-        _io->waitMs(10);
-    return _io->readInput();
-}
-
-void ArduinoMenu::renderDiagnosticsScreen(size_t index) {
-#ifdef ARDUINO
-    Serial.println("--- Diagnostics ---");
-    Serial.print("Calibration status: ");
-    switch (_vane->calibrationStatus()) {
-        case CalibrationManager::CalibrationStatus::Completed: Serial.println("OK"); break;
-        case CalibrationManager::CalibrationStatus::InProgress: Serial.println("In progress"); break;
-        case CalibrationManager::CalibrationStatus::AwaitingStart: Serial.println("Awaiting"); break;
-        default: Serial.println("Not started"); break;
-    }
-    Serial.print("Last calibration: ");
-    Serial.print((millis() - _lastCalibration)/60000UL);
-    Serial.println(" minutes ago");
-    if (_buffered) {
-        auto& hist = _buffered->history();
-        for (size_t i=0;i<5 && index+i<hist.size();++i)
-            Serial.println(hist[index+i].c_str());
-    }
-    Serial.println("[N]ext [P]rev [C]lear [T]est [B]ack");
-#else
-    (void)index;
-#endif
-}
-
-void ArduinoMenu::handleDiagnosticsAction(char c, size_t &index, bool &exit) {
-    if (c=='N'||c=='n') {
-        if (_buffered && index+5<_buffered->history().size()) index+=5;
-    } else if (c=='P'||c=='p') {
-        if (index>=5) index-=5;
-    } else if (c=='C'||c=='c') {
-        if (_buffered && _io->yesNoPrompt("Clear logs? (Y/N)")) {
-            _buffered->clear();
-            index=0;
-        }
-    } else if (c=='T'||c=='t') {
-        selfTest();
-    } else {
-        exit = true;
-    }
-}
-
-void ArduinoMenu::showSettingsSummary() {
-#ifdef ARDUINO
-    Serial.println("--- Settings ---");
-    Serial.print("Threshold: "); Serial.println(_settings->spin.threshold);
-    Serial.print("Detents: "); Serial.println(_settings->spin.expectedPositions);
-    Serial.print("Smoothing: "); Serial.println(_settings->spin.bufferSize);
-#endif
-}
-
-bool ArduinoMenu::handleSettingsSelection(char c) {
-#ifdef ARDUINO
-    if (c == '1') {
-        Serial.println("Enter new threshold:");
-        float v = readFloat();
-        if (_io->yesNoPrompt("Apply? (Y/N)")) _settings->spin.threshold = v;
-    } else if (c=='2') {
-        Serial.println("Enter detent count:");
-        int v = readInt();
-        if (_io->yesNoPrompt("Apply? (Y/N)")) _settings->spin.expectedPositions = v;
-    } else if (c=='3') {
-        Serial.println("Enter smoothing size:");
-        int v = readInt();
-        if (_io->yesNoPrompt("Apply? (Y/N)")) _settings->spin.bufferSize = v;
-    } else if (c=='F' || c=='f') {
-        if (_io->yesNoPrompt("Factory reset? (Y/N)")) {
-            if (_storage) _storage->clear();
-            *_settings = SettingsData();
-        }
-    } else if (c=='B' || c=='b' || c=='\n' || c=='\r') {
-        return true;
-    }
-#else
-    (void)c;
-#endif
-    return false;
-}
