@@ -22,8 +22,8 @@
 // Existing full-config constructor (unchanged)
 WindVane::WindVane(const WindVaneConfig& cfg)
     : _adc(cfg.adc), _type(cfg.type), _storage(cfg.storage) {
-  StrategyContext ctx{cfg.method, cfg.adc,  cfg.storage,
-                      cfg.io,     cfg.diag, cfg.config};
+  StrategyContext ctx{cfg.method, cfg.adc, cfg.storage,
+                      cfg.diag, cfg.config};
   auto strategy = createCalibrationStrategy(ctx);
   _calibrationManager = std::make_unique<CalibrationManager>(
       std::move(strategy), cfg.io, cfg.diag);

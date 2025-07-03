@@ -6,7 +6,7 @@ std::unique_ptr<ICalibrationStrategy> createCalibrationStrategy(
     switch (ctx.method) {
     case CalibrationMethod::SPINNING:
     default: {
-        SpinningMethodDeps deps{ctx.adc, ctx.storage, ctx.io, ctx.diag, ctx.config};
+        SpinningMethodDeps deps{ctx.adc, ctx.storage, ctx.diag, ctx.config};
         return std::make_unique<SpinningMethod>(deps);
     }
     }

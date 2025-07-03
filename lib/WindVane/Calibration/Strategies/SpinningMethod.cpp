@@ -1,7 +1,6 @@
 #include "Calibration/Strategies/SpinningMethod.h"
 #include "../../IADC.h"
 #include "../../Storage/ICalibrationStorage.h"
-#include "../../IO/IIOHandler.h"
 #include "../../Diagnostics/IDiagnostics.h"
 #include <chrono>
 #include <cmath>
@@ -13,7 +12,7 @@ using namespace std::chrono_literals;
 
 
 SpinningMethod::SpinningMethod(const SpinningMethodDeps &deps)
-    : _adc(deps.adc), _storage(deps.storage), _io(deps.io),
+    : _adc(deps.adc), _storage(deps.storage),
       _diag(deps.diag), _config(deps.config) {
   if (_storage) {
     int version = 0;
@@ -31,8 +30,6 @@ void SpinningMethod::saveCalibration() const {
 }
 
 void SpinningMethod::calibrate() {
-  promptStart();
-
   SessionState state;
   initSession(state);
 
@@ -46,8 +43,7 @@ void SpinningMethod::calibrate() {
       state.stop = true;
 
     processReading(reading, state);
-    handleUserCommand(state);
-    _io->waitMs(sampleDelay.count());
+    std::this_thread::sleep_for(sampleDelay);
   }
 
   finalizeCalibration(state.abort, _config.threshold * 1.5f);
@@ -57,20 +53,11 @@ float SpinningMethod::mapReading(float reading) const {
   return _clusterMgr.interpolate(reading);
 }
 
-void SpinningMethod::promptStart() const {
-  _diag->info("Align vane to forward reference and press any key to start.");
-  while (!_io->hasInput())
-    _io->waitMs(10);
-  _io->flushInput();
-}
-
 bool SpinningMethod::checkStall(std::chrono::steady_clock::time_point now,
                                 std::chrono::steady_clock::time_point &last,
                                 const std::chrono::seconds &timeout) const {
   if (now - last > timeout) {
-    if (_io->yesNoPrompt("No new positions detected for a while. Stop and save calibration? (Y/N)"))
-      return true;
-    last = now;
+    return true;
   }
   return false;
 }
@@ -96,27 +83,10 @@ void SpinningMethod::updateClusters(float reading, SessionState &state) {
       state.previousCount = _clusterMgr.clusters().size();
       state.lastIncrease = std::chrono::steady_clock::now();
       if (_clusterMgr.clusters().size() >= static_cast<size_t>(_config.expectedPositions)) {
-        if (_io->yesNoPrompt("All expected positions detected. Stop now? (Y/N)"))
-          state.stop = true;
+        state.stop = true;
       }
     }
     (void)added;
-  }
-}
-
-void SpinningMethod::handleUserCommand(SessionState &state) {
-  if (!_io->hasInput())
-    return;
-  char c = _io->readInput();
-  if (c == 's' || c == 'S') {
-    bool confirm = true;
-    if (_clusterMgr.clusters().size() != static_cast<size_t>(_config.expectedPositions))
-      confirm = _io->yesNoPrompt("Calibration incomplete. Stop anyway? (Y/N)");
-    if (confirm)
-      state.stop = true;
-  } else if (c == 'q' || c == 'Q') {
-    state.abort = true;
-    state.stop = true;
   }
 }
 
@@ -126,10 +96,7 @@ void SpinningMethod::finalizeCalibration(bool abort, float mergeThreshold) {
   _clusterMgr.mergeAndPrune(mergeThreshold, 2);
   if (!abort) {
     _clusterMgr.diagnostics(*_diag);
-    if (_io->yesNoPrompt("Save calibration results? (Y/N)"))
-      saveCalibration();
-    else
-      _diag->info("Calibration discarded at user request.");
+    saveCalibration();
   } else {
     _diag->info("Calibration aborted. Previous data preserved.");
   }

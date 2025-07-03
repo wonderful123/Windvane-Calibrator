@@ -4,7 +4,6 @@
 #include "SpinningConfig.h"
 #include "../IADC.h"
 #include "../Storage/ICalibrationStorage.h"
-#include "../IO/IIOHandler.h"
 #include "../Diagnostics/IDiagnostics.h"
 #include <memory>
 
@@ -12,7 +11,6 @@ struct StrategyContext {
     CalibrationMethod method{CalibrationMethod::SPINNING};
     IADC *adc{};
     ICalibrationStorage *storage{};
-    IIOHandler *io{};
     IDiagnostics *diag{};
     SpinningConfig config{};
 };

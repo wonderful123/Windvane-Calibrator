@@ -9,7 +9,6 @@
 #include "../SpinningConfig.h"
 #include "ISpinningConfigurable.h"
 #include "../../Storage/ICalibrationStorage.h"
-#include "../../IO/IIOHandler.h"
 #include "../../Diagnostics/IDiagnostics.h"
 
 class IADC;
@@ -20,7 +19,6 @@ class IADC;
 struct SpinningMethodDeps {
   IADC *adc{};
   ICalibrationStorage *storage{};
-  IIOHandler *io{};
   IDiagnostics *diag{};
   SpinningConfig config{};
 };
@@ -47,7 +45,6 @@ public:
 private:
   IADC *_adc;
   ICalibrationStorage *_storage;
-  IIOHandler *_io;
   IDiagnostics *_diag;
   ClusterManager _clusterMgr;
   std::deque<float> _recent;
@@ -63,12 +60,10 @@ private:
 
   void saveCalibration() const;
 
-  void promptStart() const;
   bool checkStall(std::chrono::steady_clock::time_point now,
                   std::chrono::steady_clock::time_point &last,
                   const std::chrono::seconds &timeout) const;
   void updateClusters(float reading, SessionState &state);
-  void handleUserCommand(SessionState &state);
   void finalizeCalibration(bool abort, float mergeThreshold);
   void processReading(float reading, SessionState &state);
   void initSession(SessionState &state);
