@@ -1,7 +1,8 @@
 #include "App.h"
+#include "Config.h"
 
-App app;
+DeviceConfig deviceCfg = defaultDeviceConfig();
+App app(deviceCfg);
 
 void setup() { app.begin(); }
-
 void loop() { app.loop(); }

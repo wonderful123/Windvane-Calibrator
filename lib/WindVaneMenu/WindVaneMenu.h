@@ -11,7 +11,7 @@
 
 #include <string>
 
-struct ArduinoMenuConfig {
+struct WindVaneMenuConfig {
   WindVane* vane{};
   IIOHandler* io{};
   IDiagnostics* diag{};
@@ -23,9 +23,9 @@ struct ArduinoMenuConfig {
   INumericReader* numeric{};  // <-- ADD TO CONFIG, pass to SettingsMenu
 };
 
-class ArduinoMenu {
+class WindVaneMenu {
  public:
-  explicit ArduinoMenu(const ArduinoMenuConfig& cfg);
+  explicit WindVaneMenu(const WindVaneMenuConfig& cfg);
   void begin();
   void update();
 

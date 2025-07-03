@@ -1,36 +1,27 @@
+// lib/WindVane/WindVane.h
+
 #pragma once
 
-#include "Calibration/CalibrationMethod.h"
-#include "IADC.h"
+#include <memory>
+
 #include "Calibration/CalibrationManager.h"
+#include "Calibration/CalibrationMethod.h"
 #include "Calibration/SpinningConfig.h"
 #include "Calibration/Strategies/ISpinningConfigurable.h"
-#include "Storage/ICalibrationStorage.h"
-#include "IO/IIOHandler.h"
 #include "Diagnostics/IDiagnostics.h"
-#include <memory>
+#include "IADC.h"
+#include "IO/IIOHandler.h"
+#include "Storage/ICalibrationStorage.h"
 
 /**
  * @enum WindVaneType
  * @brief Enumeration for different types of wind vanes.
- *
- * REED_SWITCH_WIND_VANE: Type of wind vane using reed switches.
- * MODBUS_WIND_VANE: Wind vane with Modbus interface.
  */
-enum class WindVaneType {
-  REED_SWITCH
-  // MODBUS_WIND_VANE
-  // ... other types
-};
+enum class WindVaneType { REED_SWITCH };
 
 /**
- * @class WindVane
- *
- * @brief Handles wind direction sensing and calibration.
- *
- * This class encapsulates the functionality for reading wind direction and
- * calibrating the reading. It delegates the low-level hardware interaction
- * to an object that adheres to the IADC interface.
+ * @struct WindVaneConfig
+ * @brief All dependencies for custom advanced use.
  */
 struct WindVaneConfig {
   IADC *adc{};
@@ -43,46 +34,25 @@ struct WindVaneConfig {
 };
 
 class WindVane {
-public:
+ public:
+  // ADVANCED: full config (existing)
   explicit WindVane(const WindVaneConfig &cfg);
 
-  /**
-   * @brief Gets the calibrated wind direction.
-   *
-   * @return The calibrated wind direction in degrees.
-   */
+  // SIMPLE: minimal constructor (new)
+  explicit WindVane(int adcPin, unsigned long serialBaud = 115200);
+
   float direction();
-
-  /**
-   * @brief Runs the interactive calibration routine.
-   *
-   * This method performs the complete calibration workflow and blocks until
-   * finished.
-   */
-  void runCalibration();
-
-  /// Returns the calibration timestamp stored in the storage
+  void calibrate();       // New: simple method alias for runCalibration()
+  void runCalibration();  // Advanced
   uint32_t lastCalibrationTimestamp() const;
-
-  /// Returns the current calibration status
   CalibrationManager::CalibrationStatus calibrationStatus() const;
-
   void clearCalibration();
-
   void setCalibrationConfig(const SpinningConfig &cfg);
   SpinningConfig getCalibrationConfig() const;
+  ICalibrationStorage *storage() const { return _storage; }
 
-  ICalibrationStorage* storage() const { return _storage; }
-
-private:
-  /**
-   * @brief Gets the raw wind direction from the ADC interface.
-   *
-   * @return The raw wind direction in degrees.
-   */
+ private:
   float getRawDirection();
-
-  /// Pointer to the ADC interface.
   IADC *_adc;
   WindVaneType _type;
   std::unique_ptr<CalibrationManager> _calibrationManager;

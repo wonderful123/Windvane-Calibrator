@@ -1,30 +1,46 @@
 #include "App.h"
 
-#include <Arduino.h>
+#include <Diagnostics/SerialDiagnostics.h>
+#include <IO/SerialIOHandler.h>
+#include <Settings/EEPROMSettingsStorage.h>
+#include <Settings/FileSettingsStorage.h>
+#include <Settings/SettingsData.h>
+#include <Storage/EEPROMCalibrationStorage.h>
+#include <Storage/FileCalibrationStorage.h>
 
-App::App(const DeviceConfig& deviceCfg)
-    : adc(deviceCfg.windVanePin),
-      storage(deviceCfg.calibrationAddress, deviceCfg.eepromSize),
-      io(),
-      out(),
-      diag(),
-      settingsStore(deviceCfg.settingsFile),
-      settings(),
-      windVane({&adc, WindVaneType::REED_SWITCH, CalibrationMethod::SPINNING,
-                &storage, &io, &diag, settings.spin}),
-      menu({
-          &windVane, &io, &diag, &diag, &out, &storage, &settingsStore,
-          &settings,
-          &io  // for numeric input
-      }),
-      config(deviceCfg) {
-  // Nothing else to do here; all dependencies are initialized above.
-}
+App::App(const DeviceConfig& config)
+    : cfg(config), vane(cfg.windVanePin, cfg.serialBaud), menu(nullptr) {}
 
 void App::begin() {
-  Serial.begin(config.serialBaud);
-  settingsStore.load(settings);
-  menu.begin();
+  static SerialIOHandler io;
+  static SerialDiagnostics diag;
+
+#ifdef ARDUINO
+  static EEPROMCalibrationStorage storage(cfg.calibrationAddress,
+                                          cfg.eepromSize);
+  static EEPROMSettingsStorage settingsStorage(cfg.settingsAddress,
+                                               cfg.eepromSize);
+#else
+  static FileCalibrationStorage storage("calib.dat");
+  static FileSettingsStorage settingsStorage(cfg.settingsFile);
+#endif
+  static SettingsData settings;
+
+  WindVaneMenuConfig menuCfg;
+  menuCfg.vane = &vane;
+  menuCfg.io = &io;
+  menuCfg.diag = &diag;
+  menuCfg.bufferedDiag = nullptr;
+  menuCfg.out = nullptr;
+  menuCfg.storage = &storage;
+  menuCfg.settingsStorage = &settingsStorage;
+  menuCfg.settings = &settings;
+  menuCfg.numeric = &io;
+
+  menu = new WindVaneMenu(menuCfg);
+  menu->begin();
 }
 
-void App::loop() { menu.update(); }
+void App::loop() {
+  if (menu) menu->update();
+}
