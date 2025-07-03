@@ -2,7 +2,7 @@
 #include <iostream>
 
 CalibrationManager::CalibrationManager(std::unique_ptr<ICalibrationStrategy> strategy,
-                                       IIOHandler *io, IDiagnostics *diag)
+                                       IUserIO *io, IDiagnostics *diag)
     : calibrationStrategy(std::move(strategy)),
       status(CalibrationStatus::NotStarted),
       _io(io), _diag(diag) {}

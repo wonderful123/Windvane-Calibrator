@@ -7,10 +7,9 @@
 class WindVaneMenuPresenter {
  public:
   explicit WindVaneMenuPresenter(IOutput* out) : _out(out) {}
-  void renderStatusLineArduino(const WindVaneStatus& st, const char* statusStr,
-                               const std::string& msg, MenuStatusLevel level) const;
-  void renderStatusLineHost(const WindVaneStatus& st, const char* statusStr,
-                            const std::string& msg, MenuStatusLevel level) const;
+  void renderStatusLine(const WindVaneStatus& st, const char* statusStr,
+                        const std::string& msg, MenuStatusLevel level,
+                        bool color) const;
 
  private:
   IOutput* _out;

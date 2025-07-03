@@ -13,4 +13,5 @@ public:
                                   const char* statusStr,
                                   const std::string& msg,
                                   MenuStatusLevel level) = 0;
+    virtual bool supportsColor() const = 0;
 };

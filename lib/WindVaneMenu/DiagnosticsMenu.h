@@ -6,13 +6,13 @@
 
 class DiagnosticsMenu {
 public:
-    DiagnosticsMenu(WindVane* vane, IIOHandler* io,
+    DiagnosticsMenu(WindVane* vane, IUserIO* io,
                     IBufferedDiagnostics* buffered, IDiagnostics* diag,
                     IOutput* out, IPlatform& platform);
     void show(unsigned long lastCalibration);
 private:
     WindVane* _vane;
-    IIOHandler* _io;
+    IUserIO* _io;
     IBufferedDiagnostics* _buffered;
     IDiagnostics* _diag;
     IOutput* _out;

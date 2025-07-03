@@ -14,7 +14,7 @@ public:
   };
 
   CalibrationManager(std::unique_ptr<ICalibrationStrategy> strategy,
-                     IIOHandler *io, IDiagnostics *diag);
+                     IUserIO *io, IDiagnostics *diag);
 
   // Prepares the device for calibration and waits for user confirmation
   bool beginCalibration();
@@ -36,7 +36,7 @@ public:
 private:
   std::unique_ptr<ICalibrationStrategy> calibrationStrategy;
   CalibrationStatus status;
-  IIOHandler *_io;
+  IUserIO *_io;
   IDiagnostics *_diag;
 
   void promptUserStart() const;

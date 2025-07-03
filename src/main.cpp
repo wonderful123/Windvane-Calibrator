@@ -32,7 +32,7 @@ FileSettingsStorage settingsStorage(deviceCfg.settingsFile);
 
 PlatformIOHandler io;
 PlatformOutput out;
-PlatformDiagnostics diag;
+PlatformDiagnostics diag(&out);
 SettingsData settings;
 SettingsManager settingsMgr(&settingsStorage, &settings, &diag);
 

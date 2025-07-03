@@ -28,7 +28,7 @@ struct WindVaneConfig {
   WindVaneType type{WindVaneType::REED_SWITCH};
   CalibrationMethod method{CalibrationMethod::SPINNING};
   ICalibrationStorage *storage{};
-  IIOHandler *io{};
+  IUserIO *io{};
   IDiagnostics *diag{};
   SpinningConfig config{};
 };

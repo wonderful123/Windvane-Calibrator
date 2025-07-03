@@ -3,7 +3,7 @@
 #include <WindVaneMenu/WindVaneMenuPresenter.h>
 
 #ifdef ARDUINO
-#include <Diagnostics/SerialDiagnostics.h>
+#include <Diagnostics/BasicDiagnostics.h>
 #include <UI/SerialIOHandler.h>
 #include <UI/SerialOutput.h>
 
@@ -15,15 +15,16 @@ public:
                           const char* statusStr,
                           const std::string& msg,
                           MenuStatusLevel level) override {
-        presenter.renderStatusLineArduino(st, statusStr, msg, level);
+        presenter.renderStatusLine(st, statusStr, msg, level, supportsColor());
     }
+    bool supportsColor() const override { return false; }
 };
 using Platform = ArduinoPlatform;
-using PlatformDiagnostics = SerialDiagnostics;
+using PlatformDiagnostics = BasicDiagnostics;
 using PlatformIOHandler = SerialIOHandler;
 using PlatformOutput = SerialOutput;
 #else
-#include <Diagnostics/ConsoleDiagnostics.h>
+#include <Diagnostics/BasicDiagnostics.h>
 #include <UI/ConsoleIOHandler.h>
 #include <UI/ConsoleOutput.h>
 #include <chrono>
@@ -40,11 +41,12 @@ public:
                           const char* statusStr,
                           const std::string& msg,
                           MenuStatusLevel level) override {
-        presenter.renderStatusLineHost(st, statusStr, msg, level);
+        presenter.renderStatusLine(st, statusStr, msg, level, supportsColor());
     }
+    bool supportsColor() const override { return true; }
 };
 using Platform = HostPlatform;
-using PlatformDiagnostics = ConsoleDiagnostics;
+using PlatformDiagnostics = BasicDiagnostics;
 using PlatformIOHandler = ConsoleIOHandler;
 using PlatformOutput = ConsoleOutput;
 #endif

@@ -6,7 +6,7 @@
 #include <limits>
 #endif
 
-DiagnosticsMenu::DiagnosticsMenu(WindVane* vane, IIOHandler* io,
+DiagnosticsMenu::DiagnosticsMenu(WindVane* vane, IUserIO* io,
                                  IBufferedDiagnostics* buffered,
                                  IDiagnostics* diag, IOutput* out,
                                  IPlatform& platform)
