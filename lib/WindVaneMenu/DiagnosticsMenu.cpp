@@ -25,7 +25,7 @@ char DiagnosticsMenu::readCharBlocking() const {
 
 void DiagnosticsMenu::renderScreen(size_t index, platform::TimeMs lastCalibration) const {
     DiagnosticsViewModel model;
-    model.status = _vane.calibrationStatus();
+    model.status = _vane.getCalibrationStatus();
     model.minutesSinceCalibration = _view.platform().millis() - lastCalibration;
     if (_buffered)
         model.history = &_buffered->get().history();
@@ -57,7 +57,7 @@ void DiagnosticsMenu::handleAction(char c, size_t &index, bool &exit) const {
 
 DiagnosticsMenu::SelfTestStatus DiagnosticsMenu::selfTest() const {
     bool ok = true;
-    float d = _vane.direction();
+    float d = _vane.getDirection();
     if (d < 0 || d >= 360) ok = false;
     return ok ? SelfTestStatus::Ok : SelfTestStatus::Failed;
 }

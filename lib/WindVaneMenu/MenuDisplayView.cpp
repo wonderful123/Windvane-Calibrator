@@ -10,7 +10,7 @@ bool MenuDisplayView::updateLiveDisplay(WindVane& vane) const {
     static platform::TimeMs last = platform::TimeMs{0};
     if (_platform.millis() - last > platform::TimeMs{1000}) {
         last = _platform.millis();
-        float d = vane.direction();
+        float d = vane.getDirection();
         char buf[64];
         snprintf(buf, sizeof(buf), "\rDir: %.1f\xC2\xB0 (%s)   \r", d, compassPoint(d));
         _out.write(buf);

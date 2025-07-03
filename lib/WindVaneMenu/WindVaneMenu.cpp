@@ -33,7 +33,7 @@ WindVaneMenu::WindVaneMenu(const WindVaneMenuConfig& cfg)
 
 void WindVaneMenu::begin() {
   _stateStack.clear();
-  pushState(static_cast<State>(_settingsMgr.menuState()));
+  pushState(static_cast<State>(_settingsMgr.getMenuState()));
   showMainMenu();
   _display.begin(_vane);
 }
@@ -107,7 +107,7 @@ MenuResult WindVaneMenu::runCalibration() {
 
 void WindVaneMenu::handleDisplaySelection() {
   pushState(State::LiveDisplay);
-  if (_vane.calibrationStatus() !=
+  if (_vane.getCalibrationStatus() !=
       CalibrationManager::CalibrationStatus::Completed)
     _display.setStatusMessage("Warning: uncalibrated", MenuStatusLevel::Warning);
   _out.writeln("Live direction - press any key to return");

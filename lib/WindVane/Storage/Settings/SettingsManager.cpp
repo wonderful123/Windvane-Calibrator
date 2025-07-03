@@ -30,11 +30,11 @@ StorageResult SettingsManager::save() const {
     return res;
 }
 
-float SettingsManager::spinThreshold() const { return _data.spin.threshold; }
-int SettingsManager::spinBufferSize() const { return _data.spin.bufferSize; }
-int SettingsManager::spinExpectedPositions() const { return _data.spin.expectedPositions; }
-int SettingsManager::spinSampleDelayMs() const { return _data.spin.sampleDelayMs; }
-int SettingsManager::spinStallTimeoutSec() const { return _data.spin.stallTimeoutSec; }
+float SettingsManager::getSpinThreshold() const { return _data.spin.threshold; }
+int SettingsManager::getSpinBufferSize() const { return _data.spin.bufferSize; }
+int SettingsManager::getSpinExpectedPositions() const { return _data.spin.expectedPositions; }
+int SettingsManager::getSpinSampleDelayMs() const { return _data.spin.sampleDelayMs; }
+int SettingsManager::getSpinStallTimeoutSec() const { return _data.spin.stallTimeoutSec; }
 
 void SettingsManager::setSpinThreshold(float v) {
     _data.spin.threshold = v;

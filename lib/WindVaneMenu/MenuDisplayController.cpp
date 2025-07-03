@@ -15,7 +15,7 @@ MenuDisplayController::MenuDisplayController(
 
 void MenuDisplayController::begin(WindVane& vane) {
     _lastActivity = _platform.millis();
-    _lastCalibration = vane.lastCalibrationTimestamp();
+    _lastCalibration = vane.getLastCalibrationTimestamp();
 }
 
 void MenuDisplayController::onInput() { _lastActivity = _platform.millis(); }

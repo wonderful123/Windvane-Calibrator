@@ -23,7 +23,7 @@ WindVane::WindVane(const WindVaneConfig& cfg)
 // --- New: user-friendly alias for calibration ---
 CalibrationResult WindVane::calibrate() { return runCalibration(); }
 
-float WindVane::direction() const {
+float WindVane::getDirection() const {
   float raw = getRawDirection();
   return _calibrationManager ? _calibrationManager->getCalibratedData(raw)
                              : raw * 360.0f;
@@ -36,13 +36,13 @@ CalibrationResult WindVane::runCalibration() {
   return {};
 }
 
-CalibrationManager::CalibrationStatus WindVane::calibrationStatus() const {
+CalibrationManager::CalibrationStatus WindVane::getCalibrationStatus() const {
   return _calibrationManager
              ? _calibrationManager->getStatus()
              : CalibrationManager::CalibrationStatus::NotStarted;
 }
 
-platform::TimeMs WindVane::lastCalibrationTimestamp() const {
+platform::TimeMs WindVane::getLastCalibrationTimestamp() const {
   return _storage ? platform::TimeMs{_storage->lastTimestamp()} : platform::TimeMs{0};
 }
 

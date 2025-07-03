@@ -14,16 +14,16 @@ public:
     void apply(WindVane& vane) const;
     StorageResult save() const;
 
-    const SettingsData& data() const { return _data; }
+    const SettingsData& getData() const { return _data; }
 
     // Spinning configuration getters/setters
-    float spinThreshold() const;
-    int spinBufferSize() const;
-    int spinExpectedPositions() const;
-    int spinSampleDelayMs() const;
-    int spinStallTimeoutSec() const;
+    float getSpinThreshold() const;
+    int getSpinBufferSize() const;
+    int getSpinExpectedPositions() const;
+    int getSpinSampleDelayMs() const;
+    int getSpinStallTimeoutSec() const;
 
-    PersistedMenuState menuState() const { return _data.menuState; }
+    PersistedMenuState getMenuState() const { return _data.menuState; }
     void setMenuState(PersistedMenuState s);
 
     void setSpinThreshold(float v);
