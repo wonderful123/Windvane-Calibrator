@@ -91,18 +91,21 @@ void WindVaneMenu::handleMainInput(char c) {
 }
 
 
-void WindVaneMenu::runCalibration() {
-  if (_io.yesNoPrompt("Start calibration? (Y/N)")) {
-    CalibrationResult res = _vane.runCalibration();
-    if (res.success) {
-      _display.recordCalibration();
-      _diag.info("Calibration completed");
-      _display.setStatusMessage("Calibration complete", MenuStatusLevel::Normal);
-    } else {
-      _diag.warn(res.error.c_str());
-      _display.setStatusMessage(res.error.c_str(), MenuStatusLevel::Error);
-    }
+MenuResult WindVaneMenu::runCalibration() {
+  MenuResult out;
+  if (!_io.yesNoPrompt("Start calibration? (Y/N)")) {
+    out.message = "Calibration cancelled";
+    return out;
   }
+  CalibrationResult res = _vane.runCalibration();
+  if (res.success) {
+    _display.recordCalibration();
+    out.success = true;
+    out.message = "Calibration complete";
+  } else {
+    out.message = res.error;
+  }
+  return out;
 }
 
 void WindVaneMenu::handleDisplaySelection() {
@@ -115,7 +118,14 @@ void WindVaneMenu::handleDisplaySelection() {
 
 void WindVaneMenu::handleCalibrateSelection() {
   pushState(State::Calibrate);
-  runCalibration();
+  MenuResult r = runCalibration();
+  if (r.success) {
+    _diag.info(r.message.c_str());
+    _display.setStatusMessage(r.message.c_str(), MenuStatusLevel::Normal);
+  } else if (!r.message.empty()) {
+    _diag.warn(r.message.c_str());
+    _display.setStatusMessage(r.message.c_str(), MenuStatusLevel::Error);
+  }
   popState();
   showMainMenu();
 }

@@ -10,6 +10,7 @@ public:
                     IBufferedDiagnostics* buffered, IDiagnostics* diag,
                     IOutput* out, IPlatform& platform);
     void show(platform::TimeMs lastCalibration) const;
+    enum class SelfTestStatus { Ok, Failed };
 private:
     WindVane* _vane;
     IUserIO* _io;
@@ -21,5 +22,5 @@ private:
     char readCharBlocking() const;
     void renderScreen(size_t index, platform::TimeMs lastCalibration) const;
     void handleAction(char c, size_t &index, bool &exit) const;
-    void selfTest() const;
+    SelfTestStatus selfTest() const;
 };

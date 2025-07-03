@@ -71,19 +71,21 @@ void DiagnosticsMenu::handleAction(char c, size_t &index, bool &exit) const {
             index=0;
         }
     } else if (c=='T'||c=='t') {
-        selfTest();
+        SelfTestStatus st = selfTest();
+        if (_diag) {
+            if (st == SelfTestStatus::Ok)
+                _diag->info("Self-test OK");
+            else
+                _diag->warn("Self-test failed");
+        }
     } else {
         exit = true;
     }
 }
 
-void DiagnosticsMenu::selfTest() const {
+DiagnosticsMenu::SelfTestStatus DiagnosticsMenu::selfTest() const {
     bool ok = true;
     float d = _vane->direction();
     if (d < 0 || d >= 360) ok = false;
-    if (ok) {
-        if (_diag) _diag->info("Self-test OK");
-    } else {
-        if (_diag) _diag->warn("Self-test failed");
-    }
+    return ok ? SelfTestStatus::Ok : SelfTestStatus::Failed;
 }

@@ -60,7 +60,7 @@ class WindVaneMenu {
   void showMainMenu() const;
   void handleMainInput(char c);
 
-  void runCalibration();
+  MenuResult runCalibration();
   void handleDisplaySelection();
   void handleCalibrateSelection();
   void handleDiagnosticsSelection();
