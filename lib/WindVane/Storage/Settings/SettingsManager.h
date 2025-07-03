@@ -7,15 +7,31 @@
 /** Manages loading, applying and saving device settings. */
 class SettingsManager {
 public:
-    SettingsManager(ISettingsStorage& storage, SettingsData& data, IDiagnostics& diag);
+    SettingsManager(ISettingsStorage& storage, IDiagnostics& diag);
 
     bool load();
     void apply(WindVane& vane) const;
     void save() const;
 
-    SettingsData& data() { return _data; }
+    const SettingsData& data() const { return _data; }
+
+    // Spinning configuration getters/setters
+    float spinThreshold() const;
+    int spinBufferSize() const;
+    int spinExpectedPositions() const;
+    int spinSampleDelayMs() const;
+    int spinStallTimeoutSec() const;
+
+    void setSpinThreshold(float v);
+    void setSpinBufferSize(int v);
+    void setSpinExpectedPositions(int v);
+    void setSpinSampleDelayMs(int v);
+    void setSpinStallTimeoutSec(int v);
+
 private:
+    void ensureValid();
+
     ISettingsStorage& _storage;
-    SettingsData& _data;
+    SettingsData _data;
     IDiagnostics& _diag;
 };

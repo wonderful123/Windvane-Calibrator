@@ -20,7 +20,7 @@ void SettingsMenu::run() const {
   if (opt == 1) {
     _out.writeln("Enter new buffer size:");
     int newBuf = readInt();
-    _settingsMgr.data().spin.bufferSize = newBuf;
+    _settingsMgr.setSpinBufferSize(newBuf);
     _out.writeln("Buffer size updated.");
   } else if (opt == 2) {
     _settingsMgr.save();

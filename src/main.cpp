@@ -4,7 +4,6 @@
 #include <Platform/Platform.h>
 #include <Storage/Settings/EEPROMSettingsStorage.h>
 #include <Storage/Settings/FileSettingsStorage.h>
-#include <Storage/Settings/SettingsData.h>
 #include <Storage/Settings/SettingsManager.h>
 #include <Storage/EEPROMCalibrationStorage.h>
 #include <Storage/FileCalibrationStorage.h>
@@ -33,8 +32,7 @@ FileSettingsStorage settingsStorage(deviceCfg.settingsFile);
 PlatformIOHandler io;
 PlatformOutput out;
 PlatformDiagnostics diag(&out);
-SettingsData settings;
-SettingsManager settingsMgr(settingsStorage, settings, diag);
+SettingsManager settingsMgr(settingsStorage, diag);
 
 WindVaneConfig vaneCfg{&adc, WindVaneType::REED_SWITCH,
                        CalibrationMethod::SPINNING, &calibStorage, &io, &diag,
