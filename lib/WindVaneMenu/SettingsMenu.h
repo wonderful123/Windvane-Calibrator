@@ -2,16 +2,14 @@
 #include <IO/IIOHandler.h>
 #include <IO/INumericReader.h>
 #include <IO/IOutput.h>
-#include <Settings/ISettingsStorage.h>
-#include <Settings/SettingsData.h>
 #include <Storage/ICalibrationStorage.h>
 #include <WindVane.h>
+#include <Settings/SettingsManager.h>
 
 class SettingsMenu {
  public:
   SettingsMenu(WindVane* vane, IIOHandler* io, INumericReader* numeric,
-               ICalibrationStorage* calibStorage,
-               ISettingsStorage* settingsStorage, SettingsData* settings,
+               ICalibrationStorage* calibStorage, SettingsManager* settingsMgr,
                IOutput* out);
 
   void run();
@@ -24,7 +22,6 @@ class SettingsMenu {
   IIOHandler* _io;
   INumericReader* _numeric;
   ICalibrationStorage* _storage;
-  ISettingsStorage* _settingsStorage;
-  SettingsData* _settings;
+  SettingsManager* _settingsMgr;
   IOutput* _out;
 };

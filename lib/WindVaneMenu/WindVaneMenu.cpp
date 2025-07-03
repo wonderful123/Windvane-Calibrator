@@ -2,6 +2,7 @@
 
 #include "DiagnosticsMenu.h"
 #include "SettingsMenu.h"
+#include "WindVaneCompass.h"
 
 #ifdef ARDUINO
 #include <Arduino.h>
@@ -16,11 +17,6 @@ static unsigned long millis() {
 }
 #endif
 
-static const char* compassPoint(float deg) {
-  static const char* pts[] = {"N", "NE", "E", "SE", "S", "SW", "W", "NW"};
-  int idx = static_cast<int>((deg + 22.5f) / 45.0f) & 7;
-  return pts[idx];
-}
 
 WindVaneMenu::WindVaneMenu(const WindVaneMenuConfig& cfg)
     : _vane(cfg.vane),
@@ -29,8 +25,7 @@ WindVaneMenu::WindVaneMenu(const WindVaneMenuConfig& cfg)
       _buffered(cfg.bufferedDiag),
       _out(cfg.out),
       _storage(cfg.storage),
-      _settingsStorage(cfg.settingsStorage),
-      _settings(cfg.settings),
+      _settingsMgr(cfg.settingsMgr),
       _numeric(cfg.numeric),
       _logic(),
       _presenter(&cfg.out),
@@ -190,7 +185,7 @@ void WindVaneMenu::handleDiagnosticsSelection() {
 
 void WindVaneMenu::handleSettingsSelectionMenu() {
   _state = State::Settings;
-  SettingsMenu menu(&_vane, &_io, &_numeric, &_storage, &_settingsStorage, &_settings, &_out);
+  SettingsMenu menu(&_vane, &_io, &_numeric, &_storage, &_settingsMgr, &_out);
   _state = State::Main;
   showMainMenu();
 }

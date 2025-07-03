@@ -4,14 +4,12 @@
 #include <IO/IIOHandler.h>
 #include <IO/INumericReader.h>
 #include <IO/IOutput.h>
-#include <Settings/ISettingsStorage.h>
-#include <Settings/SettingsData.h>
 #include <Storage/ICalibrationStorage.h>
 #include <WindVane.h>
 #include "WindVaneMenuLogic.h"
 #include "WindVaneMenuPresenter.h"
 #include "WindVaneMenuTypes.h"
-
+#include <Settings/SettingsManager.h>
 #include <string>
 
 /** Dependencies required by the menu. All references are borrowed and must
@@ -23,8 +21,7 @@ struct WindVaneMenuConfig {
   IBufferedDiagnostics* bufferedDiag;
   IOutput& out;
   ICalibrationStorage& storage;
-  ISettingsStorage& settingsStorage;
-  SettingsData& settings;
+  SettingsManager& settingsMgr;
   INumericReader& numeric;
 };
 
@@ -41,8 +38,7 @@ class WindVaneMenu {
   IBufferedDiagnostics* _buffered;
   IOutput& _out;
   ICalibrationStorage& _storage;
-  ISettingsStorage& _settingsStorage;
-  SettingsData& _settings;
+  SettingsManager& _settingsMgr;
   INumericReader& _numeric;
 
   WindVaneMenuLogic _logic;

@@ -7,6 +7,7 @@
 #include <Settings/EEPROMSettingsStorage.h>
 #include <Settings/FileSettingsStorage.h>
 #include <Settings/SettingsData.h>
+#include <Settings/SettingsManager.h>
 #include <Storage/EEPROMCalibrationStorage.h>
 #include <Storage/FileCalibrationStorage.h>
 
@@ -32,8 +33,11 @@ void App::begin() {
   static FileSettingsStorage settingsStorage(cfg.settingsFile);
 #endif
   static SettingsData settings;
+  static SettingsManager settingsMgr(&settingsStorage, &settings, &diag);
+  settingsMgr.load();
+  settingsMgr.apply(vane);
 
-  WindVaneMenuConfig menuCfg{vane, io, diag, nullptr, out, storage, settingsStorage, settings, io};
+  WindVaneMenuConfig menuCfg{vane, io, diag, nullptr, out, storage, settingsMgr, io};
 
   menu = std::make_unique<WindVaneMenu>(menuCfg);
   menu->begin();
