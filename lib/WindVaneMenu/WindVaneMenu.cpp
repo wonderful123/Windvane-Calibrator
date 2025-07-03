@@ -20,12 +20,18 @@ WindVaneMenu::WindVaneMenu(const WindVaneMenuConfig& cfg)
       _storage(cfg.storage),
       _settingsMgr(cfg.settingsMgr),
       _logic(),
-      _presenter(&cfg.out),
-      _state(State::Main),
-      _lastActivity(0),
-      _lastCalibration(0) {}
+        _presenter(&cfg.out),
+        _stateStack(),
+        _mainHandlers(),
+        _lastActivity(0),
+        _lastCalibration(0) {
+  pushState(State::Main);
+  initMainHandlers();
+}
 
 void WindVaneMenu::begin() {
+  _stateStack.clear();
+  pushState(State::Main);
   showMainMenu();
   _lastActivity = platformMillis();
   _lastCalibration = _vane.lastCalibrationTimestamp();
@@ -35,27 +41,18 @@ void WindVaneMenu::update() {
   if (_io.hasInput()) {
     char c = _io.readInput();
     _lastActivity = platformMillis();
-    switch (_state) {
-      case State::Main:
-        handleMainInput(c);
-        break;
-      case State::LiveDisplay:
-        _state = State::Main;
-        showMainMenu();
-        break;
-      default:
-        break;
+    if (currentState() == State::Main) {
+      handleMainInput(c);
+    } else if (currentState() == State::LiveDisplay) {
+      popState();
+      showMainMenu();
     }
   }
-  switch (_state) {
-    case State::LiveDisplay:
-      updateLiveDisplay();
-      break;
-    default:
-      break;
+  if (currentState() == State::LiveDisplay) {
+    updateLiveDisplay();
   }
-  if (platformMillis() - _lastActivity > 30000 && _state != State::Main) {
-    _state = State::Main;
+  if (platformMillis() - _lastActivity > 30000 && currentState() != State::Main) {
+    while (currentState() != State::Main) popState();
     showMainMenu();
   }
   showStatusLine();
@@ -87,30 +84,11 @@ void WindVaneMenu::handleMainInput(char c) {
     showMainMenu();
     return;
   }
-  switch (c) {
-    case 'D':
-    case 'd':
-      handleDisplaySelection();
-      break;
-    case 'C':
-    case 'c':
-      handleCalibrateSelection();
-      break;
-    case 'G':
-    case 'g':
-      handleDiagnosticsSelection();
-      break;
-    case 'S':
-    case 's':
-      handleSettingsSelectionMenu();
-      break;
-    case 'H':
-    case 'h':
-      handleHelpSelection();
-      break;
-    default:
-      handleUnknownSelection();
-      break;
+  auto it = _mainHandlers.find(c);
+  if (it != _mainHandlers.end()) {
+    it->second();
+  } else {
+    handleUnknownSelection();
   }
 }
 
@@ -126,7 +104,7 @@ void WindVaneMenu::updateLiveDisplay() {
   }
   if (_io.hasInput()) {
     _io.readInput();
-    _state = State::Main;
+    popState();
     showMainMenu();
   }
 }
@@ -149,7 +127,7 @@ void WindVaneMenu::runCalibration() {
 }
 
 void WindVaneMenu::handleDisplaySelection() {
-  _state = State::LiveDisplay;
+  pushState(State::LiveDisplay);
   if (_vane.calibrationStatus() !=
       CalibrationManager::CalibrationStatus::Completed)
     setStatusMessage("Warning: uncalibrated", MenuStatusLevel::Warning);
@@ -157,31 +135,31 @@ void WindVaneMenu::handleDisplaySelection() {
 }
 
 void WindVaneMenu::handleCalibrateSelection() {
-  _state = State::Calibrate;
+  pushState(State::Calibrate);
   runCalibration();
-  _state = State::Main;
+  popState();
   showMainMenu();
 }
 
 void WindVaneMenu::handleDiagnosticsSelection() {
-  _state = State::Diagnostics;
+  pushState(State::Diagnostics);
   DiagnosticsMenu menu(_vane, _io, _buffered, _diag, _out);
   menu.show(_lastCalibration);
-  _state = State::Main;
+  popState();
   showMainMenu();
 }
 
 void WindVaneMenu::handleSettingsSelectionMenu() {
-  _state = State::Settings;
+  pushState(State::Settings);
   SettingsMenu menu(&_vane, &_io, &_storage, &_settingsMgr, &_out);
-  _state = State::Main;
+  popState();
   showMainMenu();
 }
 
 void WindVaneMenu::handleHelpSelection() {
-  _state = State::Help;
+  pushState(State::Help);
   showHelp();
-  _state = State::Main;
+  popState();
   showMainMenu();
 }
 
@@ -201,8 +179,32 @@ void WindVaneMenu::showHelp() {
 void WindVaneMenu::clearScreen() { _out.clear(); }
 
 void WindVaneMenu::setStatusMessage(const char* msg, MenuStatusLevel lvl,
-                                   unsigned long ms) {
+                                    unsigned long ms) {
   _statusMsg = msg;
   _statusLevel = lvl;
   _msgExpiry = platformMillis() + ms;
+}
+
+void WindVaneMenu::pushState(State s) { _stateStack.push_back(s); }
+
+void WindVaneMenu::popState() {
+  if (!_stateStack.empty()) _stateStack.pop_back();
+}
+
+WindVaneMenu::State WindVaneMenu::currentState() const {
+  return _stateStack.empty() ? State::Main : _stateStack.back();
+}
+
+void WindVaneMenu::initMainHandlers() {
+  _mainHandlers.clear();
+  _mainHandlers['D'] = [this] { handleDisplaySelection(); };
+  _mainHandlers['d'] = [this] { handleDisplaySelection(); };
+  _mainHandlers['C'] = [this] { handleCalibrateSelection(); };
+  _mainHandlers['c'] = [this] { handleCalibrateSelection(); };
+  _mainHandlers['G'] = [this] { handleDiagnosticsSelection(); };
+  _mainHandlers['g'] = [this] { handleDiagnosticsSelection(); };
+  _mainHandlers['S'] = [this] { handleSettingsSelectionMenu(); };
+  _mainHandlers['s'] = [this] { handleSettingsSelectionMenu(); };
+  _mainHandlers['H'] = [this] { handleHelpSelection(); };
+  _mainHandlers['h'] = [this] { handleHelpSelection(); };
 }

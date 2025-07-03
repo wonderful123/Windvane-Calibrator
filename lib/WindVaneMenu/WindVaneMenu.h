@@ -10,6 +10,9 @@
 #include "WindVaneMenuTypes.h"
 #include <Settings/SettingsManager.h>
 #include <string>
+#include <functional>
+#include <unordered_map>
+#include <vector>
 
 /** Dependencies required by the menu. All references are borrowed and must
  * outlive the menu instance. */
@@ -48,7 +51,8 @@ class WindVaneMenu {
     Settings,
     Help
   };
-  State _state;
+  std::vector<State> _stateStack;
+  std::unordered_map<char, std::function<void()>> _mainHandlers;
   unsigned long _lastActivity;
   unsigned long _lastCalibration;
 
@@ -72,4 +76,8 @@ class WindVaneMenu {
   void clearScreen();
   void setStatusMessage(const char* msg, MenuStatusLevel lvl = MenuStatusLevel::Normal,
                         unsigned long ms = 3000);
+  void pushState(State s);
+  void popState();
+  State currentState() const;
+  void initMainHandlers();
 };
