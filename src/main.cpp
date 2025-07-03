@@ -21,15 +21,17 @@ std::unique_ptr<SerialOutput> out;
 SettingsData settings;
 std::unique_ptr<WindVane> windVane;
 std::unique_ptr<ArduinoMenu> menu;
+DeviceConfig deviceConfig = defaultDeviceConfig();
 
 void setup() {
-  Serial.begin(115200);
-  adc = std::make_unique<ESP32ADC>(WINDVANE_GPIO_PIN);
-  storage = std::make_unique<EEPROMCalibrationStorage>(0);
+  Serial.begin(deviceConfig.serialBaud);
+  adc = std::make_unique<ESP32ADC>(deviceConfig.windVanePin);
+  storage = std::make_unique<EEPROMCalibrationStorage>(deviceConfig.calibrationAddress,
+                                                      deviceConfig.eepromSize);
   io = std::make_unique<SerialIOHandler>();
   out = std::make_unique<SerialOutput>();
   diag = std::make_unique<BufferedDiagnostics>();
-  settingsStore = std::make_unique<FileSettingsStorage>("settings.cfg");
+  settingsStore = std::make_unique<FileSettingsStorage>(deviceConfig.settingsFile);
   settingsStore->load(settings);
   WindVaneConfig vaneCfg{adc.get(), WindVaneType::REED_SWITCH,
                          CalibrationMethod::SPINNING, storage.get(),
