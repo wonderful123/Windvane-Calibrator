@@ -1,8 +1,7 @@
 #pragma once
 #include <Diagnostics/IBufferedDiagnostics.h>
 #include <Diagnostics/IDiagnostics.h>
-#include <IO/IIOHandler.h>
-#include <IO/INumericReader.h>
+#include <IO/IUserIO.h>
 #include <IO/IOutput.h>
 #include <Storage/ICalibrationStorage.h>
 #include <WindVane.h>
@@ -16,13 +15,12 @@
  * outlive the menu instance. */
 struct WindVaneMenuConfig {
   WindVane& vane;
-  IIOHandler& io;
+  IUserIO& io;
   IDiagnostics& diag;
   IBufferedDiagnostics* bufferedDiag;
   IOutput& out;
   ICalibrationStorage& storage;
   SettingsManager& settingsMgr;
-  INumericReader& numeric;
 };
 
 class WindVaneMenu {
@@ -33,13 +31,12 @@ class WindVaneMenu {
 
  private:
   WindVane& _vane;
-  IIOHandler& _io;
+  IUserIO& _io;
   IDiagnostics& _diag;
   IBufferedDiagnostics* _buffered;
   IOutput& _out;
   ICalibrationStorage& _storage;
   SettingsManager& _settingsMgr;
-  INumericReader& _numeric;
 
   WindVaneMenuLogic _logic;
   WindVaneMenuPresenter _presenter;

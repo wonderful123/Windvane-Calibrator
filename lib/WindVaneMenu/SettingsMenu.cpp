@@ -1,13 +1,11 @@
 #include "SettingsMenu.h"
 
-SettingsMenu::SettingsMenu(WindVane* vane, IIOHandler* io,
-                           INumericReader* numeric,
+SettingsMenu::SettingsMenu(WindVane* vane, IUserIO* io,
                            ICalibrationStorage* calibStorage,
                            SettingsManager* settingsMgr,
                            IOutput* out)
     : _vane(vane),
       _io(io),
-      _numeric(numeric),
       _storage(calibStorage),
       _settingsMgr(settingsMgr),
       _out(out) {}
@@ -32,7 +30,7 @@ void SettingsMenu::run() {
 }
 
 float SettingsMenu::readFloat() {
-  return _numeric ? _numeric->readFloat() : 0.0f;
+  return _io ? _io->readFloat() : 0.0f;
 }
 
-int SettingsMenu::readInt() { return _numeric ? _numeric->readInt() : 0; }
+int SettingsMenu::readInt() { return _io ? _io->readInt() : 0; }

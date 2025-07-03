@@ -30,7 +30,7 @@ void App::begin() {
   settingsMgr.load();
   settingsMgr.apply(vane);
 
-  WindVaneMenuConfig menuCfg{vane, io, diag, nullptr, out, storage, settingsMgr, io};
+  WindVaneMenuConfig menuCfg{vane, io, diag, nullptr, out, storage, settingsMgr};
 
   menu = std::make_unique<WindVaneMenu>(menuCfg);
   menu->begin();

@@ -19,7 +19,6 @@ WindVaneMenu::WindVaneMenu(const WindVaneMenuConfig& cfg)
       _out(cfg.out),
       _storage(cfg.storage),
       _settingsMgr(cfg.settingsMgr),
-      _numeric(cfg.numeric),
       _logic(),
       _presenter(&cfg.out),
       _state(State::Main),
@@ -174,7 +173,7 @@ void WindVaneMenu::handleDiagnosticsSelection() {
 
 void WindVaneMenu::handleSettingsSelectionMenu() {
   _state = State::Settings;
-  SettingsMenu menu(&_vane, &_io, &_numeric, &_storage, &_settingsMgr, &_out);
+  SettingsMenu menu(&_vane, &_io, &_storage, &_settingsMgr, &_out);
   _state = State::Main;
   showMainMenu();
 }
