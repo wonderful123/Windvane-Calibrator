@@ -1,18 +1,22 @@
 #pragma once
 
 #include "ICalibrationStorage.h"
+#include "IBlobStorage.h"
 #include <vector>
 #include <fstream>
 #include <string>
 #include <cstdint>
 
-class FileCalibrationStorage : public ICalibrationStorage {
+class FileCalibrationStorage : public ICalibrationStorage, public IBlobStorage {
 public:
     explicit FileCalibrationStorage(const std::string& path);
     void save(const std::vector<ClusterData>& clusters, int version) override;
     bool load(std::vector<ClusterData>& clusters, int &version) override;
     uint32_t lastTimestamp() const override { return _lastTimestamp; }
     void clear() override;
+
+    bool writeBlob(const std::vector<unsigned char>& data) override;
+    bool readBlob(std::vector<unsigned char>& data) override;
 
 private:
     std::string _path;

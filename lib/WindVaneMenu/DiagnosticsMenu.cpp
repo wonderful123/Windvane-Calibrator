@@ -1,6 +1,6 @@
 #include "DiagnosticsMenu.h"
 #include <Platform/Platform.h>
-#include <IO/IOutput.h>
+#include <IO/IIO.h>
 #ifndef ARDUINO
 #include <iostream>
 #include <limits>
@@ -8,8 +8,10 @@
 
 DiagnosticsMenu::DiagnosticsMenu(WindVane* vane, IIOHandler* io,
                                  IBufferedDiagnostics* buffered,
-                                 IDiagnostics* diag, IOutput* out)
-    : _vane(vane), _io(io), _buffered(buffered), _diag(diag), _out(out) {}
+                                 IDiagnostics* diag, IOutput* out,
+                                 IPlatform& platform)
+    : _vane(vane), _io(io), _buffered(buffered), _diag(diag), _out(out),
+      _platform(&platform) {}
 
 void DiagnosticsMenu::show(unsigned long lastCalibration) {
 #ifdef ARDUINO
@@ -43,7 +45,7 @@ void DiagnosticsMenu::renderScreen(size_t index, unsigned long lastCalibration) 
         default: _out->writeln("Not started"); break;
     }
     _out->write("Last calibration: ");
-    snprintf(buf, sizeof(buf), "%lu", (platformMillis() - lastCalibration)/60000UL);
+    snprintf(buf, sizeof(buf), "%lu", (_platform->millis() - lastCalibration)/60000UL);
     _out->write(buf);
     _out->writeln(" minutes ago");
     if (_buffered) {

@@ -10,7 +10,7 @@
 #include "Calibration/Strategies/ISpinningConfigurable.h"
 #include "Diagnostics/IDiagnostics.h"
 #include "IADC.h"
-#include "IO/IIOHandler.h"
+#include "IO/IIO.h"
 #include "Storage/ICalibrationStorage.h"
 
 /**
@@ -35,11 +35,8 @@ struct WindVaneConfig {
 
 class WindVane {
  public:
-  // ADVANCED: full config (existing)
+  // All dependencies must be provided via the configuration structure
   explicit WindVane(const WindVaneConfig &cfg);
-
-  // SIMPLE: minimal constructor (new)
-  explicit WindVane(int adcPin, unsigned long serialBaud = 115200);
 
   float direction();
   void calibrate();       // New: simple method alias for runCalibration()

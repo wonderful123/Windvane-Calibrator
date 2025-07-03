@@ -1,5 +1,5 @@
 #pragma once
-#include "IOutput.h"
+#include "IIO.h"
 #include <iostream>
 class ConsoleOutput : public IOutput {
 public:
