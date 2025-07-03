@@ -6,10 +6,8 @@
 #include <Arduino.h>
 #else
 #include <chrono>
-#include <iostream>
 #include <limits>
 #include <cstdio>
-using std::cout; using std::endl;
 static unsigned long millis() {
     using namespace std::chrono;
     static auto start = steady_clock::now();
@@ -24,7 +22,8 @@ static const char* compassPoint(float deg) {
 }
 
 ArduinoMenu::ArduinoMenu(const ArduinoMenuConfig& cfg)
-    : _vane(cfg.vane), _io(cfg.io), _diag(cfg.diag), _storage(cfg.storage),
+    : _vane(cfg.vane), _io(cfg.io), _diag(cfg.diag), _out(cfg.out),
+      _storage(cfg.storage),
       _settingsStorage(cfg.settingsStorage), _settings(cfg.settings),
       _state(State::Main), _lastActivity(0), _lastCalibration(0) {
     _buffered = dynamic_cast<IBufferedDiagnostics*>(cfg.diag);
@@ -73,24 +72,16 @@ void ArduinoMenu::showStatusLine() {
 }
 
 void ArduinoMenu::showMainMenu() {
-#ifdef ARDUINO
     clearScreen();
-    Serial.println();
-    Serial.println("=== Wind Vane Menu ===");
-    Serial.println("[D] Display direction ");
-    Serial.println("[C] Calibrate        ");
-    Serial.println("[G] Diagnostics      ");
-    Serial.println("[S] Settings         ");
-    Serial.println("[H] Help             ");
-#else
-    clearScreen();
-    cout << "\n=== Wind Vane Menu ===" << endl;
-    cout << "[D] Display direction " << endl;
-    cout << "[C] Calibrate        " << endl;
-    cout << "[G] Diagnostics      " << endl;
-    cout << "[S] Settings         " << endl;
-    cout << "[H] Help             " << endl;
-    cout << "Choose option: " << endl;
+    _out->writeln("");
+    _out->writeln("=== Wind Vane Menu ===");
+    _out->writeln("[D] Display direction ");
+    _out->writeln("[C] Calibrate        ");
+    _out->writeln("[G] Diagnostics      ");
+    _out->writeln("[S] Settings         ");
+    _out->writeln("[H] Help             ");
+#ifndef ARDUINO
+    _out->writeln("Choose option: ");
 #endif
 }
 
@@ -111,15 +102,9 @@ void ArduinoMenu::updateLiveDisplay() {
     if (millis() - last > 1000) {
         last = millis();
         float d = _vane->direction();
-#ifdef ARDUINO
-        Serial.print("\rDir: ");
-        Serial.print(d,1);
-        Serial.print("\xC2\xB0 (");
-        Serial.print(compassPoint(d));
-        Serial.print(")   \r");
-#else
-        cout << "\rDir: " << d << "\xC2\xB0 (" << compassPoint(d) << ")   \r" << std::flush;
-#endif
+        char buf[64];
+        snprintf(buf, sizeof(buf), "\rDir: %.1f\xC2\xB0 (%s)   \r", d, compassPoint(d));
+        _out->write(buf);
     }
     if (_io->hasInput()) {
         _io->readInput();
@@ -142,26 +127,29 @@ void ArduinoMenu::renderStatusLineArduino(float dir, const char* statusStr, unsi
     char line[80];
     snprintf(line, sizeof(line), "\rDir:%6.1f\xC2\xB0 %-2s Status:%-10s Cal:%4lum", dir,
              compassPoint(dir), statusStr, ago);
-    Serial.print(line);
+    _out->write(line);
     if (!_statusMsg.empty() && millis() < _msgExpiry) {
-        if (_statusLevel != StatusLevel::Normal) Serial.print(" !! ");
-        Serial.print(_statusMsg.c_str());
+        if (_statusLevel != StatusLevel::Normal) _out->write(" !! ");
+        _out->write(_statusMsg.c_str());
     }
-    Serial.print("    \r");
+    _out->write("    \r");
 }
 
 void ArduinoMenu::renderStatusLineHost(float dir, const char* statusStr, unsigned long ago) {
     char line[80];
     snprintf(line, sizeof(line), "\rDir:%6.1f\xC2\xB0 %-2s Status:%-10s Cal:%4lum", dir,
              compassPoint(dir), statusStr, ago);
-    std::cout << line;
+    _out->write(line);
     if (!_statusMsg.empty() && millis() < _msgExpiry) {
         const char* color=""; const char* reset="";
         if (_statusLevel == StatusLevel::Warning) { color="\033[33m"; reset="\033[0m"; }
         else if (_statusLevel == StatusLevel::Error) { color="\033[31m"; reset="\033[0m"; }
-        std::cout << " " << color << _statusMsg << reset;
+        _out->write(" ");
+        _out->write(color);
+        _out->write(_statusMsg.c_str());
+        _out->write(reset);
     }
-    std::cout << "    \r" << std::flush;
+    _out->write("    \r");
 }
 
 void ArduinoMenu::clearExpiredMessage() {
@@ -185,11 +173,7 @@ void ArduinoMenu::handleDisplaySelection() {
     _state = State::LiveDisplay;
     if (_vane->calibrationStatus() != CalibrationManager::CalibrationStatus::Completed)
         setStatusMessage("Warning: uncalibrated", StatusLevel::Warning);
-#ifdef ARDUINO
-    Serial.println("Live direction - press any key to return");
-#else
-    cout << "Live direction - press any key to return" << endl;
-#endif
+    _out->writeln("Live direction - press any key to return");
 }
 
 void ArduinoMenu::handleCalibrateSelection() {
@@ -201,7 +185,7 @@ void ArduinoMenu::handleCalibrateSelection() {
 
 void ArduinoMenu::handleDiagnosticsSelection() {
     _state = State::Diagnostics;
-    DiagnosticsMenu menu(_vane, _io, _buffered, _diag);
+    DiagnosticsMenu menu(_vane, _io, _buffered, _diag, _out);
     menu.show(_lastCalibration);
     _state = State::Main;
     showMainMenu();
@@ -209,7 +193,7 @@ void ArduinoMenu::handleDiagnosticsSelection() {
 
 void ArduinoMenu::handleSettingsSelectionMenu() {
     _state = State::Settings;
-    SettingsMenu menu(_vane, _io, _storage, _settingsStorage, _settings);
+    SettingsMenu menu(_vane, _io, _storage, _settingsStorage, _settings, _out);
     menu.run();
     _state = State::Main;
     showMainMenu();
@@ -228,22 +212,16 @@ void ArduinoMenu::handleUnknownSelection() {
 
 
 void ArduinoMenu::showHelp() {
-#ifdef ARDUINO
-    Serial.println("--- Help ---");
-    Serial.println("D: Live wind direction display");
-    Serial.println("C: Start calibration routine");
-    Serial.println("G: View diagnostics log");
-    Serial.println("S: Settings and maintenance");
-    Serial.println("H: Show this help text");
-#endif
+    _out->writeln("--- Help ---");
+    _out->writeln("D: Live wind direction display");
+    _out->writeln("C: Start calibration routine");
+    _out->writeln("G: View diagnostics log");
+    _out->writeln("S: Settings and maintenance");
+    _out->writeln("H: Show this help text");
 }
 
 void ArduinoMenu::clearScreen() {
-#ifdef ARDUINO
-    Serial.print("\033[2J\033[H");
-#else
-    std::cout << "\033[2J\033[H";
-#endif
+    _out->clear();
 }
 
 void ArduinoMenu::setStatusMessage(const char* msg, StatusLevel lvl, unsigned long ms) {

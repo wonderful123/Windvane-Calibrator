@@ -1,13 +1,12 @@
 #include "DiagnosticsMenu.h"
+#include <IO/IOutput.h>
 #ifdef ARDUINO
 #include <Arduino.h>
 #else
 #include <iostream>
 #include <limits>
 #include <chrono>
-using std::cout; using std::endl;
 static unsigned long millis() {
-    using namespace std::chrono;
     static auto start = steady_clock::now();
     return duration_cast<milliseconds>(steady_clock::now() - start).count();
 }
@@ -15,8 +14,8 @@ static unsigned long millis() {
 
 DiagnosticsMenu::DiagnosticsMenu(WindVane* vane, IIOHandler* io,
                                  IBufferedDiagnostics* buffered,
-                                 IDiagnostics* diag)
-    : _vane(vane), _io(io), _buffered(buffered), _diag(diag) {}
+                                 IDiagnostics* diag, IOutput* out)
+    : _vane(vane), _io(io), _buffered(buffered), _diag(diag), _out(out) {}
 
 void DiagnosticsMenu::show(unsigned long lastCalibration) {
 #ifdef ARDUINO
@@ -40,23 +39,25 @@ char DiagnosticsMenu::readCharBlocking() {
 
 void DiagnosticsMenu::renderScreen(size_t index, unsigned long lastCalibration) {
 #ifdef ARDUINO
-    Serial.println("--- Diagnostics ---");
-    Serial.print("Calibration status: ");
+    char buf[32];
+    _out->writeln("--- Diagnostics ---");
+    _out->write("Calibration status: ");
     switch (_vane->calibrationStatus()) {
-        case CalibrationManager::CalibrationStatus::Completed: Serial.println("OK"); break;
-        case CalibrationManager::CalibrationStatus::InProgress: Serial.println("In progress"); break;
-        case CalibrationManager::CalibrationStatus::AwaitingStart: Serial.println("Awaiting"); break;
-        default: Serial.println("Not started"); break;
+        case CalibrationManager::CalibrationStatus::Completed: _out->writeln("OK"); break;
+        case CalibrationManager::CalibrationStatus::InProgress: _out->writeln("In progress"); break;
+        case CalibrationManager::CalibrationStatus::AwaitingStart: _out->writeln("Awaiting"); break;
+        default: _out->writeln("Not started"); break;
     }
-    Serial.print("Last calibration: ");
-    Serial.print((millis() - lastCalibration)/60000UL);
-    Serial.println(" minutes ago");
+    _out->write("Last calibration: ");
+    snprintf(buf, sizeof(buf), "%lu", (millis() - lastCalibration)/60000UL);
+    _out->write(buf);
+    _out->writeln(" minutes ago");
     if (_buffered) {
         auto& hist = _buffered->history();
         for (size_t i=0;i<5 && index+i<hist.size();++i)
-            Serial.println(hist[index+i].c_str());
+            _out->writeln(hist[index+i].c_str());
     }
-    Serial.println("[N]ext [P]rev [C]lear [T]est [B]ack");
+    _out->writeln("[N]ext [P]rev [C]lear [T]est [B]ack");
 #else
     (void)index; (void)lastCalibration;
 #endif

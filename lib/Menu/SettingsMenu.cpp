@@ -1,4 +1,6 @@
 #include "SettingsMenu.h"
+#include <IO/IOutput.h>
+#include "INumericReader.h"
 #ifdef ARDUINO
 #include <Arduino.h>
 #else
@@ -10,15 +12,16 @@
 SettingsMenu::SettingsMenu(WindVane* vane, IIOHandler* io,
                            ICalibrationStorage* calibStorage,
                            ISettingsStorage* settingsStorage,
-                           SettingsData* settings)
+                           SettingsData* settings,
+                           IOutput* out)
     : _vane(vane), _io(io), _storage(calibStorage),
-      _settingsStorage(settingsStorage), _settings(settings) {}
+      _settingsStorage(settingsStorage), _settings(settings), _out(out) {}
 
 void SettingsMenu::run() {
 #ifdef ARDUINO
     showSummary();
-    Serial.println("[1] Threshold  [2] Detents  [3] Smoothing");
-    Serial.println("[F] Factory reset  [B] Back");
+    _out->writeln("[1] Threshold  [2] Detents  [3] Smoothing");
+    _out->writeln("[F] Factory reset  [B] Back");
     bool done = false;
     while (!done) {
         char c = readCharBlocking();
@@ -36,48 +39,42 @@ char SettingsMenu::readCharBlocking() {
 }
 
 float SettingsMenu::readFloat() {
-#ifdef ARDUINO
-    while (!Serial.available()) _io->waitMs(10);
-    float v = Serial.parseFloat();
-    Serial.readStringUntil('\n');
-    return v;
-#else
-    float v; std::cin >> v; std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); return v;
-#endif
+    if (auto num = dynamic_cast<INumericReader*>(_io))
+        return num->readFloat();
+    return 0.0f;
 }
 
 int SettingsMenu::readInt() {
-#ifdef ARDUINO
-    while (!Serial.available()) _io->waitMs(10);
-    int v = Serial.parseInt();
-    Serial.readStringUntil('\n');
-    return v;
-#else
-    int v; std::cin >> v; std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); return v;
-#endif
+    if (auto num = dynamic_cast<INumericReader*>(_io))
+        return num->readInt();
+    return 0;
 }
 
 void SettingsMenu::showSummary() {
 #ifdef ARDUINO
-    Serial.println("--- Settings ---");
-    Serial.print("Threshold: "); Serial.println(_settings->spin.threshold);
-    Serial.print("Detents: "); Serial.println(_settings->spin.expectedPositions);
-    Serial.print("Smoothing: "); Serial.println(_settings->spin.bufferSize);
+    _out->writeln("--- Settings ---");
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%f", _settings->spin.threshold);
+    _out->write("Threshold: "); _out->writeln(buf);
+    snprintf(buf, sizeof(buf), "%d", _settings->spin.expectedPositions);
+    _out->write("Detents: "); _out->writeln(buf);
+    snprintf(buf, sizeof(buf), "%d", _settings->spin.bufferSize);
+    _out->write("Smoothing: "); _out->writeln(buf);
 #endif
 }
 
 bool SettingsMenu::handleSelection(char c) {
 #ifdef ARDUINO
     if (c == '1') {
-        Serial.println("Enter new threshold:");
+        _out->writeln("Enter new threshold:");
         float v = readFloat();
         if (_io->yesNoPrompt("Apply? (Y/N)")) _settings->spin.threshold = v;
     } else if (c=='2') {
-        Serial.println("Enter detent count:");
+        _out->writeln("Enter detent count:");
         int v = readInt();
         if (_io->yesNoPrompt("Apply? (Y/N)")) _settings->spin.expectedPositions = v;
     } else if (c=='3') {
-        Serial.println("Enter smoothing size:");
+        _out->writeln("Enter smoothing size:");
         int v = readInt();
         if (_io->yesNoPrompt("Apply? (Y/N)")) _settings->spin.bufferSize = v;
     } else if (c=='F' || c=='f') {

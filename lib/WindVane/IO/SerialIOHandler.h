@@ -1,10 +1,11 @@
 #pragma once
 #include "IIOHandler.h"
+#include "INumericReader.h"
 #ifdef ARDUINO
 #include <Arduino.h>
 #endif
 
-class SerialIOHandler : public IIOHandler {
+class SerialIOHandler : public IIOHandler, public INumericReader {
 public:
     bool hasInput() override {
 #ifdef ARDUINO
@@ -44,6 +45,30 @@ public:
 #else
         (void)prompt;
         return false;
+#endif
+    }
+
+    float readFloat() override {
+#ifdef ARDUINO
+        while (!Serial.available())
+            delay(10);
+        float v = Serial.parseFloat();
+        Serial.readStringUntil('\n');
+        return v;
+#else
+        return 0.0f;
+#endif
+    }
+
+    int readInt() override {
+#ifdef ARDUINO
+        while (!Serial.available())
+            delay(10);
+        int v = Serial.parseInt();
+        Serial.readStringUntil('\n');
+        return v;
+#else
+        return 0;
 #endif
     }
 };

@@ -6,12 +6,14 @@
 #include <Storage/ICalibrationStorage.h>
 #include <Settings/ISettingsStorage.h>
 #include <Settings/SettingsData.h>
+#include <IO/IOutput.h>
 #include <string>
 
 struct ArduinoMenuConfig {
     WindVane* vane{};
     IIOHandler* io{};
     IDiagnostics* diag{};
+    IOutput* out{};
     ICalibrationStorage* storage{nullptr};
     ISettingsStorage* settingsStorage{nullptr};
     SettingsData* settings{nullptr};
@@ -28,6 +30,7 @@ private:
     WindVane* _vane;
     IIOHandler* _io;
     IDiagnostics* _diag;
+    IOutput* _out;
     IBufferedDiagnostics* _buffered{nullptr};
     ICalibrationStorage* _storage{nullptr};
     ISettingsStorage* _settingsStorage{nullptr};
