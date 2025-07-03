@@ -13,12 +13,14 @@ void EEPROMCalibrationStorage::save(const std::vector<ClusterData>& clusters, in
 #ifdef ARDUINO
     size_t addr = _startAddress;
     EEPROM.begin(_eepromSize);
-    EEPROM.put(addr, version); addr += sizeof(int);
-    uint32_t timestamp = platform::toEmbedded(_platform.millis());
-    _lastTimestamp = timestamp;
-    EEPROM.put(addr, timestamp); addr += sizeof(uint32_t);
-    uint16_t count = static_cast<uint16_t>(clusters.size());
-    EEPROM.put(addr, count); addr += sizeof(uint16_t);
+    _schemaVersion = version;
+    CalibrationStorageHeader hdr{};
+    hdr.version = static_cast<uint16_t>(version);
+    hdr.timestamp = platform::toEmbedded(_platform.millis());
+    _lastTimestamp = hdr.timestamp;
+    hdr.count = static_cast<uint16_t>(clusters.size());
+    hdr.crc = crc32(clusters);
+    EEPROM.put(addr, hdr); addr += sizeof(CalibrationStorageHeader);
     for (const auto& c : clusters) {
         EEPROM.put(addr, c); addr += sizeof(ClusterData);
     }
@@ -33,23 +35,27 @@ bool EEPROMCalibrationStorage::load(std::vector<ClusterData>& clusters, int &ver
 #ifdef ARDUINO
     size_t addr = _startAddress;
     EEPROM.begin(_eepromSize);
-    EEPROM.get(addr, version); addr += sizeof(int);
-    uint32_t timestamp = 0;
-    EEPROM.get(addr, timestamp); addr += sizeof(uint32_t);
-    _lastTimestamp = timestamp;
-    uint16_t count = 0;
-    EEPROM.get(addr, count); addr += sizeof(uint16_t);
+    CalibrationStorageHeader hdr{};
+    EEPROM.get(addr, hdr); addr += sizeof(CalibrationStorageHeader);
+    version = hdr.version;
+    _schemaVersion = hdr.version;
+    _lastTimestamp = hdr.timestamp;
+    uint16_t count = hdr.count;
     if (count == 0 || count > 64) {
         EEPROM.end();
         return false;
     }
-    clusters.clear();
+    clusters.resize(count);
     for (uint16_t i = 0; i < count; ++i) {
         ClusterData c{};
         EEPROM.get(addr, c); addr += sizeof(ClusterData);
-        clusters.push_back(c);
+        clusters[i] = c;
     }
     EEPROM.end();
+    uint32_t crc = crc32(clusters);
+    if (crc != hdr.crc) {
+        return false;
+    }
     return true;
 #else
     (void)clusters;
@@ -62,15 +68,12 @@ void EEPROMCalibrationStorage::clear() {
 #ifdef ARDUINO
     size_t addr = _startAddress;
     EEPROM.begin(_eepromSize);
-    int version = 0;
-    EEPROM.put(addr, version); addr += sizeof(int);
-    uint32_t ts = 0;
-    EEPROM.put(addr, ts); addr += sizeof(uint32_t);
-    uint16_t count = 0;
-    EEPROM.put(addr, count); addr += sizeof(uint16_t);
+    CalibrationStorageHeader hdr{};
+    EEPROM.put(addr, hdr); addr += sizeof(CalibrationStorageHeader);
     EEPROM.commit();
     EEPROM.end();
     _lastTimestamp = 0;
+    _schemaVersion = 0;
 #else
     /* no-op */
 #endif
