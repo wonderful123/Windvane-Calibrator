@@ -1,9 +1,6 @@
 #include "App.h"
 
-#include <Diagnostics/SerialDiagnostics.h>
-#include <IO/SerialOutput.h>
-#include <IO/ConsoleOutput.h>
-#include <IO/SerialIOHandler.h>
+#include <Platform/Platform.h>
 #include <Settings/EEPROMSettingsStorage.h>
 #include <Settings/FileSettingsStorage.h>
 #include <Settings/SettingsData.h>
@@ -15,13 +12,9 @@ App::App(const DeviceConfig& config)
     : cfg(config), vane(cfg.windVanePin, cfg.serialBaud), menu(nullptr) {}
 
 void App::begin() {
-  static SerialIOHandler io;
-#ifdef ARDUINO
-  static SerialOutput out;
-#else
-  static ConsoleOutput out;
-#endif
-  static SerialDiagnostics diag;
+  static PlatformIOHandler io;
+  static PlatformOutput out;
+  static PlatformDiagnostics diag;
 
 #ifdef ARDUINO
   static EEPROMCalibrationStorage storage(cfg.calibrationAddress,

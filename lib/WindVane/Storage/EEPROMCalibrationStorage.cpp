@@ -2,6 +2,7 @@
 #ifdef ARDUINO
 #include <Arduino.h>
 #endif
+#include <Platform/Platform.h>
 
 EEPROMCalibrationStorage::EEPROMCalibrationStorage(size_t startAddress,
                                                    size_t eepromSize)
@@ -12,7 +13,7 @@ void EEPROMCalibrationStorage::save(const std::vector<ClusterData>& clusters, in
     size_t addr = _startAddress;
     EEPROM.begin(_eepromSize);
     EEPROM.put(addr, version); addr += sizeof(int);
-    uint32_t timestamp = millis();
+    uint32_t timestamp = platformMillis();
     _lastTimestamp = timestamp;
     EEPROM.put(addr, timestamp); addr += sizeof(uint32_t);
     uint16_t count = static_cast<uint16_t>(clusters.size());

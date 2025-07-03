@@ -1,15 +1,6 @@
 #include "WindVaneMenuLogic.h"
 
-#ifdef ARDUINO
-#include <Arduino.h>
-#else
-#include <chrono>
-static unsigned long millis() {
-    using namespace std::chrono;
-    static auto start = steady_clock::now();
-    return duration_cast<milliseconds>(steady_clock::now() - start).count();
-}
-#endif
+#include <Platform/Platform.h>
 
 WindVaneStatus WindVaneMenuLogic::queryStatus(WindVane* vane, unsigned long lastCalibration) const {
     WindVaneStatus status;
@@ -17,7 +8,7 @@ WindVaneStatus WindVaneMenuLogic::queryStatus(WindVane* vane, unsigned long last
         status.direction = vane->direction();
         status.calibrationStatus = vane->calibrationStatus();
     }
-    status.minutesSinceCalibration = (millis() - lastCalibration) / 60000UL;
+    status.minutesSinceCalibration = (platformMillis() - lastCalibration) / 60000UL;
     return status;
 }
 

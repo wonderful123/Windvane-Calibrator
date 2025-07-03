@@ -3,18 +3,11 @@
 #include "DiagnosticsMenu.h"
 #include "SettingsMenu.h"
 #include "WindVaneCompass.h"
+#include <Platform/Platform.h>
 
-#ifdef ARDUINO
-#include <Arduino.h>
-#else
-#include <chrono>
+#ifndef ARDUINO
 #include <cstdio>
 #include <limits>
-static unsigned long millis() {
-  using namespace std::chrono;
-  static auto start = steady_clock::now();
-  return duration_cast<milliseconds>(steady_clock::now() - start).count();
-}
 #endif
 
 
@@ -35,14 +28,14 @@ WindVaneMenu::WindVaneMenu(const WindVaneMenuConfig& cfg)
 
 void WindVaneMenu::begin() {
   showMainMenu();
-  _lastActivity = millis();
+  _lastActivity = platformMillis();
   _lastCalibration = _vane.lastCalibrationTimestamp();
 }
 
 void WindVaneMenu::update() {
   if (_io.hasInput()) {
     char c = _io.readInput();
-    _lastActivity = millis();
+    _lastActivity = platformMillis();
     switch (_state) {
       case State::Main:
         handleMainInput(c);
@@ -62,7 +55,7 @@ void WindVaneMenu::update() {
     default:
       break;
   }
-  if (millis() - _lastActivity > 30000 && _state != State::Main) {
+  if (platformMillis() - _lastActivity > 30000 && _state != State::Main) {
     _state = State::Main;
     showMainMenu();
   }
@@ -72,11 +65,7 @@ void WindVaneMenu::update() {
 void WindVaneMenu::showStatusLine() {
   WindVaneStatus st = _logic.queryStatus(_vane, _lastCalibration);
   const char* statusStr = _logic.statusText(st.calibrationStatus);
-#ifdef ARDUINO
-  _presenter.renderStatusLineArduino(st, statusStr, _statusMsg, _statusLevel);
-#else
-  _presenter.renderStatusLineHost(st, statusStr, _statusMsg, _statusLevel);
-#endif
+  PLATFORM_RENDER_STATUSLINE(_presenter, st, statusStr, _statusMsg, _statusLevel);
   clearExpiredMessage();
 }
 
@@ -128,8 +117,8 @@ void WindVaneMenu::handleMainInput(char c) {
 
 void WindVaneMenu::updateLiveDisplay() {
   static unsigned long last = 0;
-  if (millis() - last > 1000) {
-    last = millis();
+  if (platformMillis() - last > 1000) {
+    last = platformMillis();
     float d = _vane.direction();
     char buf[64];
     snprintf(buf, sizeof(buf), "\rDir: %.1f\xC2\xB0 (%s)   \r", d,
@@ -145,7 +134,7 @@ void WindVaneMenu::updateLiveDisplay() {
 
 
 void WindVaneMenu::clearExpiredMessage() {
-  if (!_statusMsg.empty() && millis() >= _msgExpiry) {
+  if (!_statusMsg.empty() && platformMillis() >= _msgExpiry) {
     _statusMsg.clear();
     _statusLevel = MenuStatusLevel::Normal;
   }
@@ -154,7 +143,7 @@ void WindVaneMenu::clearExpiredMessage() {
 void WindVaneMenu::runCalibration() {
   if (_io.yesNoPrompt("Start calibration? (Y/N)")) {
     _vane.runCalibration();
-    _lastCalibration = millis();
+    _lastCalibration = platformMillis();
     _diag.info("Calibration completed");
     setStatusMessage("Calibration complete", MenuStatusLevel::Normal);
   }
@@ -216,5 +205,5 @@ void WindVaneMenu::setStatusMessage(const char* msg, MenuStatusLevel lvl,
                                    unsigned long ms) {
   _statusMsg = msg;
   _statusLevel = lvl;
-  _msgExpiry = millis() + ms;
+  _msgExpiry = platformMillis() + ms;
 }
