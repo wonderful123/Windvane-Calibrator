@@ -3,7 +3,7 @@
 #include "DiagnosticsMenu.h"
 #include "SettingsMenu.h"
 #include "WindVaneCompass.h"
-#include <Platform/Platform.h>
+#include "../Platform/Platform.h"
 
 #ifndef ARDUINO
 #include <cstdio>

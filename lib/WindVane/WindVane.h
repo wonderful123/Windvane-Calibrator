@@ -35,11 +35,8 @@ struct WindVaneConfig {
 
 class WindVane {
  public:
-  // ADVANCED: full config (existing)
+  // All dependencies must be provided via the configuration structure
   explicit WindVane(const WindVaneConfig &cfg);
-
-  // SIMPLE: minimal constructor (new)
-  explicit WindVane(int adcPin, unsigned long serialBaud = 115200);
 
   float direction();
   void calibrate();       // New: simple method alias for runCalibration()

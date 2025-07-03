@@ -8,6 +8,10 @@ The ADC interface used by the library returns values in the range `[0,1]`
 representing a full rotation. All calibration and interpolation routines assume
 readings are normalized to this range and convert them to degrees in `[0,360)`.
 
+All hardware-specific components are injected through `WindVaneConfig`,
+allowing the library to remain platform agnostic. The example `main.cpp`
+illustrates how to wire up default Arduino implementations.
+
 ---
 
 ## Table of Contents

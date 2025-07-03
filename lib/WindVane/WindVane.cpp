@@ -8,16 +8,7 @@
 #include "IO/IIOHandler.h"
 #include "Storage/ICalibrationStorage.h"
 
-#ifdef ARDUINO
-#include <Diagnostics/SerialDiagnostics.h>
-#include <Hardware/ESP32/ADC.h>
-#include <IO/SerialIOHandler.h>
-#include <Storage/EEPROMCalibrationStorage.h>
-#else
-#include <Diagnostics/ConsoleDiagnostics.h>
-#include <IO/ConsoleIOHandler.h>
-#include <Storage/FileCalibrationStorage.h>
-#endif
+// No default hardware instantiation here; all dependencies must be injected
 
 // Existing full-config constructor (unchanged)
 WindVane::WindVane(const WindVaneConfig& cfg)
@@ -27,41 +18,6 @@ WindVane::WindVane(const WindVaneConfig& cfg)
   auto strategy = createCalibrationStrategy(ctx);
   _calibrationManager = std::make_unique<CalibrationManager>(
       std::move(strategy), cfg.io, cfg.diag);
-}
-
-// --- NEW MINIMALIST CONSTRUCTOR ---
-WindVane::WindVane(int adcPin, unsigned long serialBaud) {
-#ifdef ARDUINO
-  static ESP32ADC _default_adc(adcPin);
-  static EEPROMCalibrationStorage _default_storage(0, 512);
-  static SerialDiagnostics _default_diag;
-  static SerialIOHandler _default_io;
-  static SpinningConfig _default_config;  // Zero/default values
-  static WindVaneConfig _default_cfg{&_default_adc,
-                                     WindVaneType::REED_SWITCH,
-                                     CalibrationMethod::SPINNING,
-                                     &_default_storage,
-                                     &_default_io,
-                                     &_default_diag,
-                                     _default_config};
-  Serial.begin(serialBaud);
-  *this = WindVane(_default_cfg);
-#else
-  // Host version (if you want Console support)
-  static ConsoleIOHandler _default_io;
-  static FileCalibrationStorage _default_storage("calib.dat");
-  static ConsoleDiagnostics _default_diag;
-  static SpinningConfig _default_config;
-  static WindVaneConfig _default_cfg{
-      nullptr,  // User must set an IADC for desktop/host
-      WindVaneType::REED_SWITCH,
-      CalibrationMethod::SPINNING,
-      &_default_storage,
-      &_default_io,
-      &_default_diag,
-      _default_config};
-  *this = WindVane(_default_cfg);
-#endif
 }
 
 // --- New: user-friendly alias for calibration ---
