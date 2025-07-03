@@ -31,6 +31,8 @@ public:
   // Gets the current calibration status
   CalibrationStatus getStatus() const;
 
+  ICalibrationStrategy* strategy() const { return calibrationStrategy.get(); }
+
 private:
   std::unique_ptr<ICalibrationStrategy> calibrationStrategy;
   CalibrationStatus status;

@@ -54,3 +54,21 @@ bool EEPROMCalibrationStorage::load(std::vector<ClusterData>& clusters, int &ver
     return false;
 #endif
 }
+
+void EEPROMCalibrationStorage::clear() {
+#ifdef ARDUINO
+    size_t addr = _startAddress;
+    EEPROM.begin(512);
+    int version = 0;
+    EEPROM.put(addr, version); addr += sizeof(int);
+    uint32_t ts = 0;
+    EEPROM.put(addr, ts); addr += sizeof(uint32_t);
+    uint16_t count = 0;
+    EEPROM.put(addr, count); addr += sizeof(uint16_t);
+    EEPROM.commit();
+    EEPROM.end();
+    _lastTimestamp = 0;
+#else
+    /* no-op */
+#endif
+}

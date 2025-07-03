@@ -4,6 +4,8 @@
 #include <Storage/EEPROMCalibrationStorage.h>
 #include <IO/SerialIOHandler.h>
 #include <Diagnostics/BufferedDiagnostics.h>
+#include <Settings/FileSettingsStorage.h>
+#include <Settings/SettingsData.h>
 #include <Menu/ArduinoMenu.h>
 #include "Config.h"
 
@@ -13,6 +15,8 @@ std::unique_ptr<ESP32ADC> adc;
 std::unique_ptr<EEPROMCalibrationStorage> storage;
 std::unique_ptr<SerialIOHandler> io;
 std::unique_ptr<BufferedDiagnostics> diag;
+std::unique_ptr<FileSettingsStorage> settingsStore;
+SettingsData settings;
 std::unique_ptr<WindVane> windVane;
 std::unique_ptr<ArduinoMenu> menu;
 
@@ -22,10 +26,15 @@ void setup() {
   storage = std::make_unique<EEPROMCalibrationStorage>(0);
   io = std::make_unique<SerialIOHandler>();
   diag = std::make_unique<BufferedDiagnostics>();
+  settingsStore = std::make_unique<FileSettingsStorage>("settings.cfg");
+  settingsStore->load(settings);
   windVane = std::make_unique<WindVane>(adc.get(), WindVaneType::REED_SWITCH,
                                         CalibrationMethod::SPINNING,
-                                        storage.get(), io.get(), diag.get());
-  menu = std::make_unique<ArduinoMenu>(windVane.get(), io.get(), diag.get());
+                                        storage.get(), io.get(), diag.get(),
+                                        settings.spin);
+  menu = std::make_unique<ArduinoMenu>(windVane.get(), io.get(), diag.get(),
+                                       storage.get(), settingsStore.get(),
+                                       &settings);
   menu->begin();
 }
 
