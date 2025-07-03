@@ -1,29 +1,18 @@
 #include "IOFactory.h"
+#include <PlatformFactory.h>
 
 namespace ui {
 
 std::unique_ptr<IUserIO> makeDefaultIO() {
-#ifdef ARDUINO
-    return std::make_unique<SerialIOHandler>();
-#else
-    return std::make_unique<ConsoleIOHandler>();
-#endif
+    return platform_factory::makeIO();
 }
 
 std::unique_ptr<IOutput> makeDefaultOutput() {
-#ifdef ARDUINO
-    return std::make_unique<SerialOutput>();
-#else
-    return std::make_unique<ConsoleOutput>();
-#endif
+    return platform_factory::makeOutput();
 }
 
 void beginPlatformIO(unsigned long baud) {
-#ifdef ARDUINO
-    Serial.begin(baud);
-#else
-    (void)baud;
-#endif
+    platform_factory::beginPlatformIO(baud);
 }
 
 } // namespace ui

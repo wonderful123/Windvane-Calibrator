@@ -5,13 +5,9 @@
 #include "WindVaneCompass.h"
 #include "MenuDisplayController.h"
 #include <Calibration/CalibrationResult.h>
-#include <Platform/Platform.h>
 #include <Platform/IPlatform.h>
-
-#ifndef ARDUINO
 #include <cstdio>
 #include <limits>
-#endif
 
 
 WindVaneMenu::WindVaneMenu(const WindVaneMenuConfig& cfg)
@@ -72,9 +68,7 @@ void WindVaneMenu::showMainMenu() const {
   _out.writeln("[G] Diagnostics      ");
   _out.writeln("[S] Settings         ");
   _out.writeln("[H] Help             ");
-#ifndef ARDUINO
   _out.writeln("Choose option: ");
-#endif
 }
 
 void WindVaneMenu::handleMainInput(char c) {

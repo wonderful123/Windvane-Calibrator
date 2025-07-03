@@ -5,9 +5,6 @@
 #include <Platform/TimeUtils.h>
 #include <Platform/IPlatform.h>
 #include <cstdint>
-#ifdef ARDUINO
-#include <EEPROM.h>
-#endif
 
 class EEPROMCalibrationStorage final : public CalibrationStorageBase, public IBlobStorage {
 public:

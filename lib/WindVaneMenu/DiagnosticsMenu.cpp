@@ -1,5 +1,5 @@
 #include "DiagnosticsMenu.h"
-#include <Platform/Platform.h>
+#include <Platform/IPlatform.h>
 #include <UI/IIO.h>
 #include <iostream>
 #include <limits>

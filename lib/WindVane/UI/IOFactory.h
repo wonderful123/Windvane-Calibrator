@@ -1,8 +1,5 @@
 #pragma once
-#include "ConsoleIOHandler.h"
-#include "SerialIOHandler.h"
-#include "ConsoleOutput.h"
-#include "SerialOutput.h"
+#include "IIO.h"
 #include <memory>
 
 namespace ui {

@@ -1,8 +1,6 @@
 #include "EEPROMCalibrationStorage.h"
-#ifdef ARDUINO
-#include <Arduino.h>
-#endif
-#include <Platform/Platform.h>
+#include <Platform/IPlatform.h>
+#include <PlatformFactory.h>
 
 EEPROMCalibrationStorage::EEPROMCalibrationStorage(IPlatform& platform,
                                                     size_t startAddress,
@@ -11,11 +9,15 @@ EEPROMCalibrationStorage::EEPROMCalibrationStorage(IPlatform& platform,
       _slotCount(4), _slotSize(eepromSize / 4), _platform(platform) {}
 
 StorageResult EEPROMCalibrationStorage::save(const std::vector<ClusterData>& clusters, int version) {
-#ifdef ARDUINO
+    if (!platform_factory::has_eeprom()) {
+        (void)clusters;
+        (void)version;
+        return {StorageStatus::IoError, "no eeprom"};
+    }
     int latest = findLatestSlot();
     int slot = latest < 0 ? 0 : (latest + 1) % _slotCount;
     size_t addr = slotAddr(slot);
-    EEPROM.begin(_eepromSize);
+    platform_factory::eeprom_begin(_eepromSize);
     _schemaVersion = version;
     CalibrationStorageHeader hdr{};
     hdr.version = static_cast<uint16_t>(version);
@@ -23,109 +25,108 @@ StorageResult EEPROMCalibrationStorage::save(const std::vector<ClusterData>& clu
     _lastTimestamp = hdr.timestamp;
     hdr.count = static_cast<uint16_t>(clusters.size());
     hdr.crc = crc32(clusters);
-    EEPROM.put(addr, hdr); addr += sizeof(CalibrationStorageHeader);
+    platform_factory::eeprom_write_bytes(addr, &hdr, sizeof(CalibrationStorageHeader));
+    addr += sizeof(CalibrationStorageHeader);
     for (const auto& c : clusters) {
-        EEPROM.put(addr, c); addr += sizeof(ClusterData);
+        platform_factory::eeprom_write_bytes(addr, &c, sizeof(ClusterData));
+        addr += sizeof(ClusterData);
     }
-    EEPROM.commit();
+    platform_factory::eeprom_commit();
+    platform_factory::eeprom_end();
     return {};
-#else
-    (void)clusters;
-    (void)version;
-    return {StorageStatus::IoError, "no eeprom"};
-#endif
 }
 
 StorageResult EEPROMCalibrationStorage::load(std::vector<ClusterData>& clusters, int &version) {
-#ifdef ARDUINO
+    if (!platform_factory::has_eeprom()) {
+        (void)clusters;
+        (void)version;
+        return {StorageStatus::IoError, "no eeprom"};
+    }
     int slot = findLatestSlot();
     if (slot < 0)
         return {StorageStatus::NotFound, "slot"};
     size_t addr = slotAddr(slot);
-    EEPROM.begin(_eepromSize);
+    platform_factory::eeprom_begin(_eepromSize);
     CalibrationStorageHeader hdr{};
-    EEPROM.get(addr, hdr); addr += sizeof(CalibrationStorageHeader);
+    platform_factory::eeprom_read_bytes(addr, &hdr, sizeof(CalibrationStorageHeader));
+    addr += sizeof(CalibrationStorageHeader);
     version = hdr.version;
     _schemaVersion = hdr.version;
     _lastTimestamp = hdr.timestamp;
     uint16_t count = hdr.count;
     if (count == 0 || count > 64) {
-        EEPROM.end();
+        platform_factory::eeprom_end();
         return {StorageStatus::InvalidFormat, "count"};
     }
     clusters.resize(count);
     for (uint16_t i = 0; i < count; ++i) {
         ClusterData c{};
-        EEPROM.get(addr, c); addr += sizeof(ClusterData);
+        platform_factory::eeprom_read_bytes(addr, &c, sizeof(ClusterData));
+        addr += sizeof(ClusterData);
         clusters[i] = c;
     }
-    EEPROM.end();
+    platform_factory::eeprom_end();
     uint32_t crc = crc32(clusters);
     if (crc != hdr.crc) {
         return {StorageStatus::CorruptData, "crc"};
     }
     return {};
-#else
-    (void)clusters;
-    (void)version;
-    return {StorageStatus::IoError, "no eeprom"};
-#endif
 }
 
 void EEPROMCalibrationStorage::clear() {
     CalibrationStorageHeader hdr{};
-#ifdef ARDUINO
-    EEPROM.begin(_eepromSize);
+    if (!platform_factory::has_eeprom()) {
+        (void)hdr;
+        return;
+    }
+    platform_factory::eeprom_begin(_eepromSize);
     for (int i = 0; i < _slotCount; ++i) {
         size_t addr = slotAddr(i);
-        EEPROM.put(addr, hdr);
+        platform_factory::eeprom_write_bytes(addr, &hdr, sizeof(CalibrationStorageHeader));
     }
-    EEPROM.commit();
-    EEPROM.end();
-#else
-    (void)hdr;
-#endif
+    platform_factory::eeprom_commit();
+    platform_factory::eeprom_end();
 }
 
 StorageResult EEPROMCalibrationStorage::writeBlob(const std::vector<unsigned char>& data) {
-#ifdef ARDUINO
+    if (!platform_factory::has_eeprom()) {
+        (void)data;
+        return {StorageStatus::IoError, "no eeprom"};
+    }
     if (data.size() + _startAddress > _eepromSize)
         return {StorageStatus::InvalidFormat, "size"};
-    EEPROM.begin(_eepromSize);
+    platform_factory::eeprom_begin(_eepromSize);
     for (size_t i = 0; i < data.size(); ++i)
-        EEPROM.write(_startAddress + i, data[i]);
-    EEPROM.commit();
-    EEPROM.end();
+        platform_factory::eeprom_write_byte(_startAddress + i, data[i]);
+    platform_factory::eeprom_commit();
+    platform_factory::eeprom_end();
     return {};
-#else
-    (void)data;
-    return {StorageStatus::IoError, "no eeprom"};
-#endif
 }
 
 StorageResult EEPROMCalibrationStorage::readBlob(std::vector<unsigned char>& data) {
-#ifdef ARDUINO
-    EEPROM.begin(_eepromSize);
+    if (!platform_factory::has_eeprom()) {
+        (void)data;
+        return {StorageStatus::IoError, "no eeprom"};
+    }
+    platform_factory::eeprom_begin(_eepromSize);
     data.resize(_eepromSize - _startAddress);
     for (size_t i = 0; i < data.size(); ++i)
-        data[i] = EEPROM.read(_startAddress + i);
-    EEPROM.end();
+        data[i] = platform_factory::eeprom_read_byte(_startAddress + i);
+    platform_factory::eeprom_end();
     return {};
-#else
-    (void)data;
-    return {StorageStatus::IoError, "no eeprom"};
-#endif
 }
 
 int EEPROMCalibrationStorage::findLatestSlot() const {
-#ifdef ARDUINO
-    EEPROM.begin(_eepromSize);
+    if (!platform_factory::has_eeprom()) {
+        return -1;
+    }
+    platform_factory::eeprom_begin(_eepromSize);
     int latest = -1;
     uint32_t latestTs = 0;
     for (int i = 0; i < _slotCount; ++i) {
         size_t addr = slotAddr(i);
         CalibrationStorageHeader hdr{};
-        EEPROM.get(addr, hdr);
+        platform_factory::eeprom_read_bytes(addr, &hdr, sizeof(CalibrationStorageHeader));
         if (hdr.version != 0 && hdr.count <= 64) {
             if (hdr.timestamp >= latestTs) {
                 latestTs = hdr.timestamp;
@@ -133,9 +134,6 @@ int EEPROMCalibrationStorage::findLatestSlot() const {
             }
         }
     }
-    EEPROM.end();
+    platform_factory::eeprom_end();
     return latest;
-#else
-    return -1;
-#endif
 }
