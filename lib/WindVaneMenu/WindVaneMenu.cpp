@@ -1,17 +1,15 @@
 #include "WindVaneMenu.h"
 
 #include "DiagnosticsMenu.h"
+#include "DiagnosticsView.h"
 #include "SettingsMenu.h"
 #include "WindVaneCompass.h"
 #include "MenuDisplayController.h"
 #include <Calibration/CalibrationResult.h>
-#include <Platform/Platform.h>
 #include <Platform/IPlatform.h>
-
-#ifndef ARDUINO
+#include <Storage/StorageResult.h>
 #include <cstdio>
 #include <limits>
-#endif
 
 
 WindVaneMenu::WindVaneMenu(const WindVaneMenuConfig& cfg)
@@ -25,16 +23,17 @@ WindVaneMenu::WindVaneMenu(const WindVaneMenuConfig& cfg)
       _platform(cfg.platform),
       _logic(),
       _presenter(&cfg.out),
-      _display(cfg.platform, cfg.io, cfg.out, _presenter, _logic),
-      _stateStack(),
+      _view(cfg.platform, cfg.io, cfg.out, _presenter),
+      _display(cfg.platform, _view, _logic, _state),
       _mainHandlers() {
+  _state.stack.clear();
   pushState(State::Main);
   initMainHandlers();
 }
 
 void WindVaneMenu::begin() {
-  _stateStack.clear();
-  pushState(static_cast<State>(_settingsMgr.menuState()));
+  _state.stack.clear();
+  pushState(static_cast<State>(_settingsMgr.getMenuState()));
   showMainMenu();
   _display.begin(_vane);
 }
@@ -72,9 +71,7 @@ void WindVaneMenu::showMainMenu() const {
   _out.writeln("[G] Diagnostics      ");
   _out.writeln("[S] Settings         ");
   _out.writeln("[H] Help             ");
-#ifndef ARDUINO
   _out.writeln("Choose option: ");
-#endif
 }
 
 void WindVaneMenu::handleMainInput(char c) {
@@ -110,7 +107,7 @@ MenuResult WindVaneMenu::runCalibration() {
 
 void WindVaneMenu::handleDisplaySelection() {
   pushState(State::LiveDisplay);
-  if (_vane.calibrationStatus() !=
+  if (_vane.getCalibrationStatus() !=
       CalibrationManager::CalibrationStatus::Completed)
     _display.setStatusMessage("Warning: uncalibrated", MenuStatusLevel::Warning);
   _out.writeln("Live direction - press any key to return");
@@ -132,7 +129,8 @@ void WindVaneMenu::handleCalibrateSelection() {
 
 void WindVaneMenu::handleDiagnosticsSelection() {
   pushState(State::Diagnostics);
-  DiagnosticsMenu menu(_vane, _io, _buffered, _diag, _out, _platform);
+  DiagnosticsView diagView(_io, _out, _platform);
+  DiagnosticsMenu menu(_vane, _buffered, diagView, _diag);
   menu.show(_display.lastCalibration());
   popState();
   showMainMenu();
@@ -169,19 +167,22 @@ void WindVaneMenu::showHelp() const {
 void WindVaneMenu::clearScreen() const { _out.clear(); }
 
 void WindVaneMenu::pushState(State s) {
-  _stateStack.push_back(s);
+  _state.stack.push_back(static_cast<PersistedMenuState>(s));
   _settingsMgr.setMenuState(static_cast<PersistedMenuState>(s));
-  _settingsMgr.save();
+  StorageResult res = _settingsMgr.save();
+  if (!res.ok()) _diag.warn("Failed to persist menu state");
 }
 
 void WindVaneMenu::popState() {
-  if (!_stateStack.empty()) _stateStack.pop_back();
+  if (!_state.stack.empty()) _state.stack.pop_back();
   _settingsMgr.setMenuState(static_cast<PersistedMenuState>(currentState()));
-  _settingsMgr.save();
+  StorageResult res = _settingsMgr.save();
+  if (!res.ok()) _diag.warn("Failed to persist menu state");
 }
 
 WindVaneMenu::State WindVaneMenu::currentState() const {
-  return _stateStack.empty() ? State::Main : _stateStack.back();
+  return _state.stack.empty() ? State::Main
+                              : static_cast<State>(_state.stack.back());
 }
 
 void WindVaneMenu::initMainHandlers() {

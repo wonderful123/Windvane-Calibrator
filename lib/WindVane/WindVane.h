@@ -12,6 +12,7 @@
 #include "IADC.h"
 #include "UI/IIO.h"
 #include "Storage/ICalibrationStorage.h"
+#include "Storage/StorageResult.h"
 #include <Platform/TimeUtils.h>
 
 /**
@@ -39,15 +40,15 @@ class WindVane {
   // All dependencies must be provided via the configuration structure
   explicit WindVane(const WindVaneConfig &cfg);
 
-  float direction() const;
+  float getDirection() const;
   CalibrationResult calibrate();       // New: simple method alias for runCalibration()
   CalibrationResult runCalibration();  // Advanced
-  platform::TimeMs lastCalibrationTimestamp() const;
-  CalibrationManager::CalibrationStatus calibrationStatus() const;
-  void clearCalibration() const;
+  platform::TimeMs getLastCalibrationTimestamp() const;
+  CalibrationManager::CalibrationStatus getCalibrationStatus() const;
+  StorageResult clearCalibration() const;
   void setCalibrationConfig(const CalibrationConfig &cfg);
   CalibrationConfig getCalibrationConfig() const;
-  ICalibrationStorage *storage() const { return _storage; }
+  ICalibrationStorage *getStorage() const { return _storage; }
 
  private:
   float getRawDirection() const;

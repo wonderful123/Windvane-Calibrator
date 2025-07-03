@@ -6,8 +6,8 @@ WindVaneStatus MenuLogic::queryStatus(WindVane* vane, platform::TimeMs lastCalib
                                               IPlatform& platform) const {
     WindVaneStatus status;
     if (vane) {
-        status.direction = vane->direction();
-        status.calibrationStatus = vane->calibrationStatus();
+        status.direction = vane->getDirection();
+        status.calibrationStatus = vane->getCalibrationStatus();
     }
     status.minutesSinceCalibration = platform::toEmbedded(
         platform.millis() - lastCalibration) / 60000UL;

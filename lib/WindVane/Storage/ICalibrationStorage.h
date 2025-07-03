@@ -12,5 +12,5 @@ public:
     virtual StorageResult load(std::vector<ClusterData>& clusters, int &version) = 0;
     virtual int getSchemaVersion() const = 0;
     virtual platform::TimeMs lastTimestamp() const { return platform::TimeMs{0}; }
-    virtual void clear() = 0;
+    virtual StorageResult clear() = 0;
 };

@@ -2,9 +2,6 @@
 #include "SettingsStorageBase.h"
 #include "../StorageResult.h"
 #include <cstddef>
-#ifdef ARDUINO
-#include <EEPROM.h>
-#endif
 
 class EEPROMSettingsStorage final : public SettingsStorageBase {
 public:

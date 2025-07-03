@@ -4,14 +4,14 @@
 #include "WindVaneStatus.h"
 #include <Platform/IPlatform.h>
 #include <Platform/TimeUtils.h>
-#include <UI/IIO.h>
+#include "MenuDisplayView.h"
+#include "MenuState.h"
 #include <string>
 
 class MenuDisplayController {
 public:
-    MenuDisplayController(IPlatform& platform, IUserIO& io, IOutput& out,
-                          MenuPresenter& presenter,
-                          MenuLogic& logic);
+    MenuDisplayController(IPlatform& platform, MenuDisplayView& view,
+                          MenuLogic& logic, MenuState& state);
     void begin(WindVane& vane);
     void onInput();
     bool updateLiveDisplay(WindVane& vane) const;
@@ -21,20 +21,13 @@ public:
                           MenuStatusLevel lvl = MenuStatusLevel::Normal,
                           platform::TimeMs ms = platform::TimeMs{3000});
     void recordCalibration();
-    platform::TimeMs lastCalibration() const { return _lastCalibration; }
+    platform::TimeMs lastCalibration() const { return _state.lastCalibration; }
 
 private:
     void clearExpiredMessage();
 
     IPlatform& _platform;
-    IUserIO& _io;
-    IOutput& _out;
-    MenuPresenter& _presenter;
+    MenuDisplayView& _view;
     MenuLogic& _logic;
-
-    platform::TimeMs _lastActivity;
-    platform::TimeMs _lastCalibration;
-    std::string _statusMsg;
-    MenuStatusLevel _statusLevel;
-    platform::TimeMs _msgExpiry;
+    MenuState& _state;
 };

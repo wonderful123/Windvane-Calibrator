@@ -5,9 +5,6 @@
 #include <Platform/TimeUtils.h>
 #include <Platform/IPlatform.h>
 #include <cstdint>
-#ifdef ARDUINO
-#include <EEPROM.h>
-#endif
 
 class EEPROMCalibrationStorage final : public CalibrationStorageBase, public IBlobStorage {
 public:
@@ -16,7 +13,7 @@ public:
                              size_t eepromSize = 512);
     StorageResult save(const std::vector<ClusterData>& clusters, int version) override;
     StorageResult load(std::vector<ClusterData>& clusters, int &version) override;
-    void clear() override;
+    StorageResult clear() override;
 
     StorageResult writeBlob(const std::vector<unsigned char>& data) override;
     StorageResult readBlob(std::vector<unsigned char>& data) override;

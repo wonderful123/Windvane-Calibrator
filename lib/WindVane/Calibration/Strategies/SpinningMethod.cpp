@@ -2,6 +2,7 @@
 #include "../../IADC.h"
 #include "../../Storage/ICalibrationStorage.h"
 #include "../../Diagnostics/IDiagnostics.h"
+#include "../../Storage/StorageResult.h"
 #include <chrono>
 #include <cmath>
 #include <algorithm>
@@ -23,7 +24,10 @@ SpinningMethod::SpinningMethod(const SpinningMethodDeps &deps)
 
 
 void SpinningMethod::saveCalibration() const {
-  _storage.save(_clusterMgr.clusters(), CALIBRATION_VERSION);
+  StorageResult res = _storage.save(_clusterMgr.clusters(), CALIBRATION_VERSION);
+  if (!res.ok()) {
+    _diag.warn("Failed to save calibration");
+  }
 }
 
 void SpinningMethod::calibrate() {

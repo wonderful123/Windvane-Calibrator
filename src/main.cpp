@@ -1,37 +1,43 @@
 #include "App.h"
 #include "Config.h"
 
-#include <Platform/Platform.h>
+#include <Diagnostics/DiagnosticsBus.h>
+#include <Diagnostics/BasicDiagnostics.h>
 #include <UI/IOFactory.h>
+#include <PlatformFactory.h>
 #include <Storage/Settings/SettingsManager.h>
-#include "PlatformFactory.h"
 
-DeviceConfig deviceCfg = defaultDeviceConfig();
+namespace {
 
-Platform platform;
-auto adc = platform_factory::makeADC(deviceCfg);
-auto calibStorage = platform_factory::makeCalibrationStorage(platform, deviceCfg);
-auto settingsStorage = platform_factory::makeSettingsStorage(deviceCfg);
+struct RuntimeContext {
+  DeviceConfig cfg{defaultDeviceConfig()};
+  std::unique_ptr<IPlatform> platform{platform_factory::makePlatform()};
+  std::unique_ptr<IADC> adc{platform_factory::makeADC(cfg)};
+  std::unique_ptr<ICalibrationStorage> calib{platform_factory::makeCalibrationStorage(*platform, cfg)};
+  std::unique_ptr<ISettingsStorage> settings{platform_factory::makeSettingsStorage(cfg)};
+  std::unique_ptr<IUserIO> io{ui::makeDefaultIO()};
+  std::unique_ptr<IOutput> out{ui::makeDefaultOutput()};
+  DiagnosticsBus diag{};
+  BasicDiagnostics sink{out.get()};
+  SettingsManager settingsMgr{*settings, diag};
+  WindVane vane{WindVaneConfig{*adc, WindVaneType::REED_SWITCH,
+                               CalibrationMethod::SPINNING, calib.get(), *io, diag,
+                               {}}};
+  App app{cfg, vane, *io, diag, *out, *calib, settingsMgr, *platform};
+};
 
-auto ioPtr = ui::makeDefaultIO();
-auto outPtr = ui::makeDefaultOutput();
-PlatformIOHandler& io = *ioPtr;
-PlatformOutput& out = *outPtr;
-PlatformDiagnostics diag;
-PlatformDiagnosticsSink sink(outPtr.get());
-diag.addSink(&sink);
-SettingsManager settingsMgr(*settingsStorage, diag);
-
-WindVaneConfig vaneCfg{*adc, WindVaneType::REED_SWITCH,
-                       CalibrationMethod::SPINNING, calibStorage.get(), io, diag,
-                       {}};
-WindVane vane(vaneCfg);
-
-App app(deviceCfg, vane, io, diag, out, *calibStorage, settingsMgr, platform);
-
-void setup() {
-  ui::beginPlatformIO(deviceCfg.serialBaud);
-  app.begin();
+RuntimeContext& ctx() {
+  static RuntimeContext instance{};
+  return instance;
 }
 
-void loop() { app.loop(); }
+} // namespace
+
+void setup() {
+  auto& c = ctx();
+  ui::beginPlatformIO(c.cfg.serialBaud);
+  c.diag.addSink(&c.sink);
+  c.app.begin();
+}
+
+void loop() { ctx().app.loop(); }

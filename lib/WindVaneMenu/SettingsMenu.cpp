@@ -1,4 +1,5 @@
 #include "SettingsMenu.h"
+#include <Storage/StorageResult.h>
 
 SettingsMenu::SettingsMenu(WindVane& vane, IUserIO& io,
                            ICalibrationStorage& calibStorage,
@@ -23,9 +24,13 @@ void SettingsMenu::run() const {
     _settingsMgr.setSpinBufferSize(newBuf);
     _out.writeln("Buffer size updated.");
   } else if (opt == 2) {
-    _settingsMgr.save();
-    _settingsMgr.apply(_vane);
-    _out.writeln("Settings saved.");
+    StorageResult res = _settingsMgr.save();
+    if (res.ok()) {
+      _settingsMgr.apply(_vane);
+      _out.writeln("Settings saved.");
+    } else {
+      _out.writeln("Failed to save settings");
+    }
   }
 }
 

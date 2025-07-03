@@ -3,68 +3,51 @@
 #include <cstdio>
 
 MenuDisplayController::MenuDisplayController(
-    IPlatform& platform, IUserIO& io, IOutput& out,
-    MenuPresenter& presenter, MenuLogic& logic)
+    IPlatform& platform, MenuDisplayView& view,
+    MenuLogic& logic, MenuState& state)
     : _platform(platform),
-      _io(io),
-      _out(out),
-      _presenter(presenter),
+      _view(view),
       _logic(logic),
-      _lastActivity(platform::TimeMs{0}),
-      _lastCalibration(platform::TimeMs{0}),
-      _statusLevel(MenuStatusLevel::Normal),
-      _msgExpiry(0) {}
+      _state(state) {}
 
 void MenuDisplayController::begin(WindVane& vane) {
-    _lastActivity = _platform.millis();
-    _lastCalibration = vane.lastCalibrationTimestamp();
+    _state.lastActivity = _platform.millis();
+    _state.lastCalibration = vane.getLastCalibrationTimestamp();
 }
 
-void MenuDisplayController::onInput() { _lastActivity = _platform.millis(); }
+void MenuDisplayController::onInput() { _state.lastActivity = _platform.millis(); }
 
 bool MenuDisplayController::checkTimeout() const {
-    return _platform.millis() - _lastActivity > platform::TimeMs{30000};
+    return _platform.millis() - _state.lastActivity > platform::TimeMs{30000};
 }
 
 bool MenuDisplayController::updateLiveDisplay(WindVane& vane) const {
-    static platform::TimeMs last = platform::TimeMs{0};
-    if (_platform.millis() - last > platform::TimeMs{1000}) {
-        last = _platform.millis();
-        float d = vane.direction();
-        char buf[64];
-        snprintf(buf, sizeof(buf), "\rDir: %.1f\xC2\xB0 (%s)   \r", d, compassPoint(d));
-        _out.write(buf);
-    }
-    if (_io.hasInput()) {
-        _io.readInput();
-        return true;
-    }
-    return false;
+    return _view.updateLiveDisplay(vane, _state);
 }
 
 void MenuDisplayController::showStatusLine(WindVane& vane) {
-    WindVaneStatus st = _logic.queryStatus(&vane, _lastCalibration, _platform);
+    WindVaneStatus st = _logic.queryStatus(&vane, _state.lastCalibration, _platform);
     const char* statusStr = _logic.statusText(st.calibrationStatus);
-    _platform.renderStatusLine(_presenter, st, statusStr, _statusMsg, _statusLevel);
+    _view.renderStatus(st, statusStr, _state.statusMsg, _state.statusLevel);
     clearExpiredMessage();
 }
 
 void MenuDisplayController::setStatusMessage(const char* msg,
                                                      MenuStatusLevel lvl,
                                                      platform::TimeMs ms) {
-    _statusMsg = msg;
-    _statusLevel = lvl;
-    _msgExpiry = _platform.millis() + ms;
+    _state.statusMsg = msg;
+    _state.statusLevel = lvl;
+    _state.msgExpiry = _platform.millis() + ms;
 }
 
 void MenuDisplayController::recordCalibration() {
-    _lastCalibration = _platform.millis();
+    _state.lastCalibration = _platform.millis();
 }
 
 void MenuDisplayController::clearExpiredMessage() {
-    if (!_statusMsg.empty() && _platform.millis() >= _msgExpiry) {
-        _statusMsg.clear();
-        _statusLevel = MenuStatusLevel::Normal;
+    if (!_state.statusMsg.empty() && _platform.millis() >= _state.msgExpiry) {
+        _state.statusMsg.clear();
+        _state.statusLevel = MenuStatusLevel::Normal;
     }
 }
 
