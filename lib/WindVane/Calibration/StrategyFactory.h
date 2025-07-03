@@ -1,7 +1,7 @@
 #pragma once
 #include "CalibrationMethod.h"
 #include "Strategies/ICalibrationStrategy.h"
-#include "Strategies/SpinningMethod.h"
+#include "SpinningConfig.h"
 #include "../IADC.h"
 #include "../Storage/ICalibrationStorage.h"
 #include "../IO/IIOHandler.h"

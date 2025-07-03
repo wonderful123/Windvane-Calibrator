@@ -25,7 +25,7 @@ ArduinoMenu::ArduinoMenu(const ArduinoMenuConfig& cfg)
     : _vane(cfg.vane), _io(cfg.io), _diag(cfg.diag), _storage(cfg.storage),
       _settingsStorage(cfg.settingsStorage), _settings(cfg.settings),
       _state(State::Main), _lastActivity(0), _lastCalibration(0) {
-    _buffered = dynamic_cast<BufferedDiagnostics*>(cfg.diag);
+    _buffered = dynamic_cast<IBufferedDiagnostics*>(cfg.diag);
 }
 
 void ArduinoMenu::begin() {
@@ -173,8 +173,8 @@ void ArduinoMenu::runCalibration() {
     if (_io->yesNoPrompt("Start calibration? (Y/N)")) {
         _vane->runCalibration();
         _lastCalibration = millis();
-        if (_buffered)
-            _buffered->info("Calibration completed");
+        if (_diag)
+            _diag->info("Calibration completed");
         setStatusMessage("Calibration complete", StatusLevel::Normal);
     }
 }

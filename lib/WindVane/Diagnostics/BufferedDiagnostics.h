@@ -1,12 +1,13 @@
 #pragma once
 #include "IDiagnostics.h"
+#include "IBufferedDiagnostics.h"
 #include <deque>
 #include <string>
 #ifdef ARDUINO
 #include <Arduino.h>
 #endif
 
-class BufferedDiagnostics : public IDiagnostics {
+class BufferedDiagnostics : public IDiagnostics, public IBufferedDiagnostics {
 public:
     explicit BufferedDiagnostics(size_t maxEntries = 10)
         : _max(maxEntries) {}
@@ -25,9 +26,9 @@ public:
         push("WARN: " + std::string(msg));
     }
 
-    const std::deque<std::string>& history() const { return _messages; }
+    const std::deque<std::string>& history() const override { return _messages; }
 
-    void clear() { _messages.clear(); }
+    void clear() override { _messages.clear(); }
 
 private:
     size_t _max;

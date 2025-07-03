@@ -1,5 +1,6 @@
 #pragma once
 #include "ISettingsStorage.h"
+#include <cstddef>
 #ifdef ARDUINO
 #include <EEPROM.h>
 #endif

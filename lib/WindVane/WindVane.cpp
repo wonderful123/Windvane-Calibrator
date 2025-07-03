@@ -3,7 +3,7 @@
 #include "Storage/ICalibrationStorage.h"
 #include "IO/IIOHandler.h"
 #include "Diagnostics/IDiagnostics.h"
-#include "Calibration/Strategies/SpinningMethod.h"
+#include "Calibration/Strategies/ISpinningConfigurable.h"
 
 WindVane::WindVane(const WindVaneConfig &cfg)
     : _adc(cfg.adc), _type(cfg.type), _storage(cfg.storage) {
@@ -44,7 +44,7 @@ void WindVane::clearCalibration() {
 
 void WindVane::setCalibrationConfig(const SpinningConfig &cfg) {
     if (_calibrationManager) {
-        auto strat = dynamic_cast<SpinningMethod*>(
+        auto strat = dynamic_cast<ISpinningConfigurable*>(
             _calibrationManager->strategy());
         if (strat)
             strat->setConfig(cfg);
@@ -53,7 +53,7 @@ void WindVane::setCalibrationConfig(const SpinningConfig &cfg) {
 
 SpinningConfig WindVane::getCalibrationConfig() const {
     if (_calibrationManager) {
-        auto strat = dynamic_cast<SpinningMethod*>(
+        auto strat = dynamic_cast<ISpinningConfigurable*>(
             _calibrationManager->strategy());
         if (strat)
             return strat->config();

@@ -2,7 +2,7 @@
 #include <WindVane.h>
 #include <IO/IIOHandler.h>
 #include <Diagnostics/IDiagnostics.h>
-#include <Diagnostics/BufferedDiagnostics.h>
+#include <Diagnostics/IBufferedDiagnostics.h>
 #include <Storage/ICalibrationStorage.h>
 #include <Settings/ISettingsStorage.h>
 #include <Settings/SettingsData.h>
@@ -28,7 +28,7 @@ private:
     WindVane* _vane;
     IIOHandler* _io;
     IDiagnostics* _diag;
-    BufferedDiagnostics* _buffered{nullptr};
+    IBufferedDiagnostics* _buffered{nullptr};
     ICalibrationStorage* _storage{nullptr};
     ISettingsStorage* _settingsStorage{nullptr};
     SettingsData* _settings{nullptr};
