@@ -6,6 +6,7 @@
 #include <Diagnostics/IDiagnostics.h>
 #include <Storage/ICalibrationStorage.h>
 #include <Settings/SettingsManager.h>
+#include <Platform/IPlatform.h>
 
 #include "Config.h"
 
@@ -13,7 +14,7 @@ class App {
  public:
   App(const DeviceConfig& config, WindVane& vane, IUserIO& io,
       IDiagnostics& diag, IOutput& out, ICalibrationStorage& storage,
-      SettingsManager& settingsMgr);
+      SettingsManager& settingsMgr, IPlatform& platform);
 
   void begin();
   void loop();
@@ -26,5 +27,6 @@ class App {
   IOutput& out;
   ICalibrationStorage& storage;
   SettingsManager& settingsMgr;
+  IPlatform& platform;
   std::unique_ptr<WindVaneMenu> menu;
 };

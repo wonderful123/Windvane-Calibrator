@@ -6,6 +6,7 @@
 #include "WindVaneMenuLogic.h"
 #include "WindVaneMenuPresenter.h"
 #include "WindVaneMenuTypes.h"
+#include <Platform/IPlatform.h>
 #include <Settings/SettingsManager.h>
 #include <string>
 #include <functional>
@@ -22,6 +23,7 @@ struct WindVaneMenuConfig {
   IOutput& out;
   ICalibrationStorage& storage;
   SettingsManager& settingsMgr;
+  IPlatform& platform;
 };
 
 class WindVaneMenu {
@@ -38,6 +40,7 @@ class WindVaneMenu {
   IOutput& _out;
   ICalibrationStorage& _storage;
   SettingsManager& _settingsMgr;
+  IPlatform& _platform;
 
   WindVaneMenuLogic _logic;
   WindVaneMenuPresenter _presenter;

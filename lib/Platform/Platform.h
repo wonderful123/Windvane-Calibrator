@@ -1,28 +1,49 @@
 #pragma once
+#include "IPlatform.h"
 
 #ifdef ARDUINO
 #include <Diagnostics/SerialDiagnostics.h>
 #include <IO/SerialIOHandler.h>
 #include <IO/SerialOutput.h>
+
+class ArduinoPlatform : public IPlatform {
+public:
+    unsigned long millis() override { return ::millis(); }
+    void renderStatusLine(WindVaneMenuPresenter& presenter,
+                          const WindVaneStatus& st,
+                          const char* statusStr,
+                          const std::string& msg,
+                          MenuStatusLevel level) override {
+        presenter.renderStatusLineArduino(st, statusStr, msg, level);
+    }
+};
+using Platform = ArduinoPlatform;
 using PlatformDiagnostics = SerialDiagnostics;
 using PlatformIOHandler = SerialIOHandler;
 using PlatformOutput = SerialOutput;
-inline unsigned long platformMillis() { return millis(); }
-#define PLATFORM_RENDER_STATUSLINE(p, st, statusStr, msg, level) \
-    p.renderStatusLineArduino(st, statusStr, msg, level)
 #else
 #include <Diagnostics/ConsoleDiagnostics.h>
 #include <IO/ConsoleIOHandler.h>
 #include <IO/ConsoleOutput.h>
 #include <chrono>
+
+class HostPlatform : public IPlatform {
+public:
+    unsigned long millis() override {
+        using namespace std::chrono;
+        static auto start = steady_clock::now();
+        return duration_cast<milliseconds>(steady_clock::now() - start).count();
+    }
+    void renderStatusLine(WindVaneMenuPresenter& presenter,
+                          const WindVaneStatus& st,
+                          const char* statusStr,
+                          const std::string& msg,
+                          MenuStatusLevel level) override {
+        presenter.renderStatusLineHost(st, statusStr, msg, level);
+    }
+};
+using Platform = HostPlatform;
 using PlatformDiagnostics = ConsoleDiagnostics;
 using PlatformIOHandler = ConsoleIOHandler;
 using PlatformOutput = ConsoleOutput;
-inline unsigned long platformMillis() {
-    using namespace std::chrono;
-    static auto start = steady_clock::now();
-    return duration_cast<milliseconds>(steady_clock::now() - start).count();
-}
-#define PLATFORM_RENDER_STATUSLINE(p, st, statusStr, msg, level) \
-    p.renderStatusLineHost(st, statusStr, msg, level)
 #endif

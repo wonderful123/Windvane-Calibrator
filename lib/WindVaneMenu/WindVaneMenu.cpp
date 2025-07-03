@@ -4,6 +4,7 @@
 #include "SettingsMenu.h"
 #include "WindVaneCompass.h"
 #include <Platform/Platform.h>
+#include <Platform/IPlatform.h>
 
 #ifndef ARDUINO
 #include <cstdio>
@@ -19,6 +20,7 @@ WindVaneMenu::WindVaneMenu(const WindVaneMenuConfig& cfg)
       _out(cfg.out),
       _storage(cfg.storage),
       _settingsMgr(cfg.settingsMgr),
+      _platform(cfg.platform),
       _logic(),
         _presenter(&cfg.out),
         _stateStack(),
@@ -33,14 +35,14 @@ void WindVaneMenu::begin() {
   _stateStack.clear();
   pushState(State::Main);
   showMainMenu();
-  _lastActivity = platformMillis();
+  _lastActivity = _platform.millis();
   _lastCalibration = _vane.lastCalibrationTimestamp();
 }
 
 void WindVaneMenu::update() {
   if (_io.hasInput()) {
     char c = _io.readInput();
-    _lastActivity = platformMillis();
+    _lastActivity = _platform.millis();
     if (currentState() == State::Main) {
       handleMainInput(c);
     } else if (currentState() == State::LiveDisplay) {
@@ -51,7 +53,7 @@ void WindVaneMenu::update() {
   if (currentState() == State::LiveDisplay) {
     updateLiveDisplay();
   }
-  if (platformMillis() - _lastActivity > 30000 && currentState() != State::Main) {
+  if (_platform.millis() - _lastActivity > 30000 && currentState() != State::Main) {
     while (currentState() != State::Main) popState();
     showMainMenu();
   }
@@ -59,9 +61,9 @@ void WindVaneMenu::update() {
 }
 
 void WindVaneMenu::showStatusLine() {
-  WindVaneStatus st = _logic.queryStatus(_vane, _lastCalibration);
+  WindVaneStatus st = _logic.queryStatus(_vane, _lastCalibration, _platform);
   const char* statusStr = _logic.statusText(st.calibrationStatus);
-  PLATFORM_RENDER_STATUSLINE(_presenter, st, statusStr, _statusMsg, _statusLevel);
+  _platform.renderStatusLine(_presenter, st, statusStr, _statusMsg, _statusLevel);
   clearExpiredMessage();
 }
 
@@ -94,8 +96,8 @@ void WindVaneMenu::handleMainInput(char c) {
 
 void WindVaneMenu::updateLiveDisplay() {
   static unsigned long last = 0;
-  if (platformMillis() - last > 1000) {
-    last = platformMillis();
+  if (_platform.millis() - last > 1000) {
+    last = _platform.millis();
     float d = _vane.direction();
     char buf[64];
     snprintf(buf, sizeof(buf), "\rDir: %.1f\xC2\xB0 (%s)   \r", d,
@@ -111,7 +113,7 @@ void WindVaneMenu::updateLiveDisplay() {
 
 
 void WindVaneMenu::clearExpiredMessage() {
-  if (!_statusMsg.empty() && platformMillis() >= _msgExpiry) {
+  if (!_statusMsg.empty() && _platform.millis() >= _msgExpiry) {
     _statusMsg.clear();
     _statusLevel = MenuStatusLevel::Normal;
   }
@@ -120,7 +122,7 @@ void WindVaneMenu::clearExpiredMessage() {
 void WindVaneMenu::runCalibration() {
   if (_io.yesNoPrompt("Start calibration? (Y/N)")) {
     _vane.runCalibration();
-    _lastCalibration = platformMillis();
+    _lastCalibration = _platform.millis();
     _diag.info("Calibration completed");
     setStatusMessage("Calibration complete", MenuStatusLevel::Normal);
   }
@@ -143,7 +145,7 @@ void WindVaneMenu::handleCalibrateSelection() {
 
 void WindVaneMenu::handleDiagnosticsSelection() {
   pushState(State::Diagnostics);
-  DiagnosticsMenu menu(_vane, _io, _buffered, _diag, _out);
+  DiagnosticsMenu menu(_vane, _io, _buffered, _diag, _out, _platform);
   menu.show(_lastCalibration);
   popState();
   showMainMenu();
@@ -182,7 +184,7 @@ void WindVaneMenu::setStatusMessage(const char* msg, MenuStatusLevel lvl,
                                     unsigned long ms) {
   _statusMsg = msg;
   _statusLevel = lvl;
-  _msgExpiry = platformMillis() + ms;
+  _msgExpiry = _platform.millis() + ms;
 }
 
 void WindVaneMenu::pushState(State s) { _stateStack.push_back(s); }

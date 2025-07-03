@@ -19,12 +19,14 @@ DeviceConfig deviceCfg = defaultDeviceConfig();
 
 #ifdef ARDUINO
 ESP32ADC adc(deviceCfg.windVanePin);
-EEPROMCalibrationStorage calibStorage(deviceCfg.calibrationAddress,
+Platform platform;
+EEPROMCalibrationStorage calibStorage(platform, deviceCfg.calibrationAddress,
                                       deviceCfg.eepromSize);
 EEPROMSettingsStorage settingsStorage(deviceCfg.settingsAddress,
                                       deviceCfg.eepromSize);
 #else
 NullADC adc;
+Platform platform;
 FileCalibrationStorage calibStorage("calib.dat");
 FileSettingsStorage settingsStorage(deviceCfg.settingsFile);
 #endif
@@ -40,7 +42,7 @@ WindVaneConfig vaneCfg{&adc, WindVaneType::REED_SWITCH,
                        {}};
 WindVane vane(vaneCfg);
 
-App app(deviceCfg, vane, io, diag, out, calibStorage, settingsMgr);
+App app(deviceCfg, vane, io, diag, out, calibStorage, settingsMgr, platform);
 
 void setup() {
 #ifdef ARDUINO
