@@ -12,19 +12,12 @@ bool CalibrationManager::beginCalibration() {
       status != CalibrationStatus::Completed)
     return false;
   status = CalibrationStatus::AwaitingStart;
-  if (_diag)
-    _diag->info("Ready to calibrate. Press any key to start.");
-  if (_io) {
-    while (!_io->hasInput())
-      _io->waitMs(10);
-    _io->flushInput();
-  }
+  promptUserStart();
   status = CalibrationStatus::InProgress;
   if (calibrationStrategy)
     calibrationStrategy->calibrate();
   status = CalibrationStatus::Completed;
-  if (_diag)
-    _diag->info("Calibration finished.");
+  finishCalibrationMessage();
   return true;
 }
 
@@ -46,4 +39,19 @@ void CalibrationManager::editCalibrationData(/*data*/) {
 
 CalibrationManager::CalibrationStatus CalibrationManager::getStatus() const {
   return status;
+}
+
+void CalibrationManager::promptUserStart() const {
+  if (_diag)
+    _diag->info("Ready to calibrate. Press any key to start.");
+  if (_io) {
+    while (!_io->hasInput())
+      _io->waitMs(10);
+    _io->flushInput();
+  }
+}
+
+void CalibrationManager::finishCalibrationMessage() const {
+  if (_diag)
+    _diag->info("Calibration finished.");
 }

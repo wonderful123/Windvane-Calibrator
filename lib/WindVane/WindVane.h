@@ -3,7 +3,8 @@
 #include "Calibration/CalibrationMethod.h"
 #include "IADC.h"
 #include "Calibration/CalibrationManager.h"
-#include "Calibration/StrategyFactory.h"
+#include "Calibration/SpinningConfig.h"
+#include "Calibration/Strategies/ISpinningConfigurable.h"
 #include "Storage/ICalibrationStorage.h"
 #include "IO/IIOHandler.h"
 #include "Diagnostics/IDiagnostics.h"
@@ -31,23 +32,19 @@ enum class WindVaneType {
  * calibrating the reading. It delegates the low-level hardware interaction
  * to an object that adheres to the IADC interface.
  */
+struct WindVaneConfig {
+  IADC *adc{};
+  WindVaneType type{WindVaneType::REED_SWITCH};
+  CalibrationMethod method{CalibrationMethod::SPINNING};
+  ICalibrationStorage *storage{};
+  IIOHandler *io{};
+  IDiagnostics *diag{};
+  SpinningConfig config{};
+};
+
 class WindVane {
 public:
-  /**
-   * @brief Constructs a WindVane object.
-   *
-   * @tparam HARDWARE The type of hardware interface used to read wind
-   * direction.
-   * @param adc The ADC interface instance.
-   * @param type The type of wind vane sensor.
-   * @param method The calibration method to be used.
-   *
-   * The constructor delegates the responsibility of hardware interaction
-   * to an IADC object, which is determined by the HARDWARE parameter.
-   */
-  WindVane(IADC *adc, WindVaneType type, CalibrationMethod method,
-           ICalibrationStorage *storage, IIOHandler *io, IDiagnostics *diag,
-           const SpinningConfig &config = {});
+  explicit WindVane(const WindVaneConfig &cfg);
 
   /**
    * @brief Gets the calibrated wind direction.

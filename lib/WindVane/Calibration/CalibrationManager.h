@@ -38,4 +38,7 @@ private:
   CalibrationStatus status;
   IIOHandler *_io;
   IDiagnostics *_diag;
+
+  void promptUserStart() const;
+  void finishCalibrationMessage() const;
 };

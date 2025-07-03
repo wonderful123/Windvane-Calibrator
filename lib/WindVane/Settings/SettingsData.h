@@ -1,5 +1,5 @@
 #pragma once
-#include "../Calibration/Strategies/SpinningMethod.h"
+#include "../Calibration/SpinningConfig.h"
 
 struct SettingsData {
     SpinningConfig spin;

@@ -3,8 +3,11 @@
 #include <deque>
 #include <vector>
 #include <cstdint>
+#include <chrono>
 #include "../ClusterData.h"
 #include "../ClusterManager.h"
+#include "../SpinningConfig.h"
+#include "ISpinningConfigurable.h"
 #include "../../Storage/ICalibrationStorage.h"
 #include "../../IO/IIOHandler.h"
 #include "../../Diagnostics/IDiagnostics.h"
@@ -13,19 +16,18 @@ class IADC;
 
 // Implements a spinning calibration strategy that records unique positions
 // while the user rotates the vane.
-struct SpinningConfig {
-  float threshold = 0.05f;      ///< Minimum delta to consider a new position
-  int bufferSize = 5;           ///< Number of samples for noise filtering
-  int expectedPositions = 16;   ///< Expected number of detent positions
-  int sampleDelayMs = 10;       ///< Delay between samples
-  int stallTimeoutSec = 5;      ///< Seconds without new detections before prompt
+
+struct SpinningMethodDeps {
+  IADC *adc{};
+  ICalibrationStorage *storage{};
+  IIOHandler *io{};
+  IDiagnostics *diag{};
+  SpinningConfig config{};
 };
 
-class SpinningMethod : public ICalibrationStrategy {
+class SpinningMethod : public ICalibrationStrategy, public ISpinningConfigurable {
 public:
-  SpinningMethod(IADC *adc, ICalibrationStorage *storage,
-                 IIOHandler *io, IDiagnostics *diag,
-                 SpinningConfig config = {});
+  explicit SpinningMethod(const SpinningMethodDeps &deps);
 
   // Runs the interactive calibration procedure.
   void calibrate() override;
@@ -33,8 +35,8 @@ public:
   // Map a raw ADC reading to a calibrated direction in degrees
   float mapReading(float reading) const override;
 
-  const SpinningConfig& config() const { return _config; }
-  void setConfig(const SpinningConfig& cfg) { _config = cfg; }
+  SpinningConfig config() const override { return _config; }
+  void setConfig(const SpinningConfig& cfg) override { _config = cfg; }
 
   static constexpr int CALIBRATION_VERSION = 1;
 
@@ -47,5 +49,23 @@ private:
   std::deque<float> _recent;
   SpinningConfig _config;
 
+  struct SessionState {
+    size_t previousCount{0};
+    bool stop{false};
+    bool abort{false};
+    float prevReading{-1.0f};
+    std::chrono::steady_clock::time_point lastIncrease{std::chrono::steady_clock::now()};
+  };
+
   void saveCalibration() const;
+
+  void promptStart() const;
+  bool checkStall(std::chrono::steady_clock::time_point now,
+                  std::chrono::steady_clock::time_point &last,
+                  const std::chrono::seconds &timeout) const;
+  void updateClusters(float reading, SessionState &state);
+  void handleUserCommand(SessionState &state);
+  void finalizeCalibration(bool abort, float mergeThreshold);
+  void processReading(float reading, SessionState &state);
+  void initSession(SessionState &state);
 };

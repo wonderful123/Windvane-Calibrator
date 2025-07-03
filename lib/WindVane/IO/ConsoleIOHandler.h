@@ -1,11 +1,12 @@
 #pragma once
 #include "IIOHandler.h"
+#include "INumericReader.h"
 #include <chrono>
 #include <iostream>
 #include <limits>
 #include <thread>
 
-class ConsoleIOHandler : public IIOHandler {
+class ConsoleIOHandler : public IIOHandler, public INumericReader {
 public:
     bool hasInput() override {
         return std::cin.rdbuf()->in_avail();
@@ -27,6 +28,20 @@ public:
         std::cin >> c;
         flushInput();
         return c == 'y' || c == 'Y';
+    }
+
+    float readFloat() override {
+        float v;
+        std::cin >> v;
+        flushInput();
+        return v;
+    }
+
+    int readInt() override {
+        int v;
+        std::cin >> v;
+        flushInput();
+        return v;
     }
 };
 

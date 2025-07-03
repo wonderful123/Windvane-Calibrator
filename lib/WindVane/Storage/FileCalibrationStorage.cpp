@@ -9,15 +9,11 @@ FileCalibrationStorage::FileCalibrationStorage(const std::string& path)
     : _path(path) {}
 
 void FileCalibrationStorage::save(const std::vector<ClusterData>& clusters, int version) {
-    if (fs::exists(_path)) {
-        fs::rename(_path, _path + ".bak");
-    }
+    backupExisting();
     std::ofstream ofs(_path);
     _lastTimestamp = static_cast<uint32_t>(std::time(nullptr));
-    ofs << version << " " << _lastTimestamp << "\n";
-    for (const auto& c : clusters) {
-        ofs << c.mean << " " << c.min << " " << c.max << " " << c.count << "\n";
-    }
+    writeHeader(ofs, version);
+    writeClusters(ofs, clusters);
 }
 
 bool FileCalibrationStorage::load(std::vector<ClusterData>& clusters, int &version) {
@@ -25,14 +21,9 @@ bool FileCalibrationStorage::load(std::vector<ClusterData>& clusters, int &versi
     if (!ifs)
         return false;
     clusters.clear();
-    std::time_t ts;
-    if (!(ifs >> version >> ts))
+    if (!readHeader(ifs, version))
         return false;
-    _lastTimestamp = static_cast<uint32_t>(ts);
-    ClusterData c{};
-    while (ifs >> c.mean >> c.min >> c.max >> c.count) {
-        clusters.push_back(c);
-    }
+    readClusters(ifs, clusters);
     return true;
 }
 
@@ -40,4 +31,35 @@ void FileCalibrationStorage::clear() {
     std::error_code ec;
     std::filesystem::remove(_path, ec);
     _lastTimestamp = 0;
+}
+
+void FileCalibrationStorage::backupExisting() const {
+    if (fs::exists(_path)) {
+        fs::rename(_path, _path + ".bak");
+    }
+}
+
+void FileCalibrationStorage::writeHeader(std::ofstream& ofs, int version) {
+    ofs << version << " " << _lastTimestamp << "\n";
+}
+
+void FileCalibrationStorage::writeClusters(std::ofstream& ofs, const std::vector<ClusterData>& clusters) {
+    for (const auto& c : clusters) {
+        ofs << c.mean << " " << c.min << " " << c.max << " " << c.count << "\n";
+    }
+}
+
+bool FileCalibrationStorage::readHeader(std::ifstream& ifs, int& version) {
+    std::time_t ts;
+    if (!(ifs >> version >> ts))
+        return false;
+    _lastTimestamp = static_cast<uint32_t>(ts);
+    return true;
+}
+
+void FileCalibrationStorage::readClusters(std::ifstream& ifs, std::vector<ClusterData>& clusters) {
+    ClusterData c{};
+    while (ifs >> c.mean >> c.min >> c.max >> c.count) {
+        clusters.push_back(c);
+    }
 }

@@ -3,16 +3,14 @@
 #include "Storage/ICalibrationStorage.h"
 #include "IO/IIOHandler.h"
 #include "Diagnostics/IDiagnostics.h"
-#include "Calibration/Strategies/SpinningMethod.h"
+#include "Calibration/Strategies/ISpinningConfigurable.h"
 
-WindVane::WindVane(IADC *adc, WindVaneType type,
-                   CalibrationMethod method,
-                   ICalibrationStorage *storage, IIOHandler *io,
-                   IDiagnostics *diag,
-                   const SpinningConfig &config)
-    : _adc(adc), _type(type), _storage(storage) {
-    auto strategy = createCalibrationStrategy(method, adc, storage, io, diag, config);
-    _calibrationManager = std::make_unique<CalibrationManager>(std::move(strategy), io, diag);
+WindVane::WindVane(const WindVaneConfig &cfg)
+    : _adc(cfg.adc), _type(cfg.type), _storage(cfg.storage) {
+    StrategyContext ctx{cfg.method, cfg.adc, cfg.storage, cfg.io, cfg.diag, cfg.config};
+    auto strategy = createCalibrationStrategy(ctx);
+    _calibrationManager =
+        std::make_unique<CalibrationManager>(std::move(strategy), cfg.io, cfg.diag);
 }
 
 float WindVane::direction() {
@@ -46,7 +44,7 @@ void WindVane::clearCalibration() {
 
 void WindVane::setCalibrationConfig(const SpinningConfig &cfg) {
     if (_calibrationManager) {
-        auto strat = dynamic_cast<SpinningMethod*>(
+        auto strat = dynamic_cast<ISpinningConfigurable*>(
             _calibrationManager->strategy());
         if (strat)
             strat->setConfig(cfg);
@@ -55,7 +53,7 @@ void WindVane::setCalibrationConfig(const SpinningConfig &cfg) {
 
 SpinningConfig WindVane::getCalibrationConfig() const {
     if (_calibrationManager) {
-        auto strat = dynamic_cast<SpinningMethod*>(
+        auto strat = dynamic_cast<ISpinningConfigurable*>(
             _calibrationManager->strategy());
         if (strat)
             return strat->config();

@@ -3,13 +3,14 @@
 #include <Arduino.h>
 #endif
 
-EEPROMCalibrationStorage::EEPROMCalibrationStorage(size_t startAddress)
-    : _startAddress(startAddress) {}
+EEPROMCalibrationStorage::EEPROMCalibrationStorage(size_t startAddress,
+                                                   size_t eepromSize)
+    : _startAddress(startAddress), _eepromSize(eepromSize) {}
 
 void EEPROMCalibrationStorage::save(const std::vector<ClusterData>& clusters, int version) {
 #ifdef ARDUINO
     size_t addr = _startAddress;
-    EEPROM.begin(512);
+    EEPROM.begin(_eepromSize);
     EEPROM.put(addr, version); addr += sizeof(int);
     uint32_t timestamp = millis();
     _lastTimestamp = timestamp;
@@ -29,7 +30,7 @@ void EEPROMCalibrationStorage::save(const std::vector<ClusterData>& clusters, in
 bool EEPROMCalibrationStorage::load(std::vector<ClusterData>& clusters, int &version) {
 #ifdef ARDUINO
     size_t addr = _startAddress;
-    EEPROM.begin(512);
+    EEPROM.begin(_eepromSize);
     EEPROM.get(addr, version); addr += sizeof(int);
     uint32_t timestamp = 0;
     EEPROM.get(addr, timestamp); addr += sizeof(uint32_t);
@@ -58,7 +59,7 @@ bool EEPROMCalibrationStorage::load(std::vector<ClusterData>& clusters, int &ver
 void EEPROMCalibrationStorage::clear() {
 #ifdef ARDUINO
     size_t addr = _startAddress;
-    EEPROM.begin(512);
+    EEPROM.begin(_eepromSize);
     int version = 0;
     EEPROM.put(addr, version); addr += sizeof(int);
     uint32_t ts = 0;
