@@ -1,6 +1,7 @@
 #include "WindVaneMenu.h"
 
 #include "DiagnosticsMenu.h"
+#include "DiagnosticsView.h"
 #include "SettingsMenu.h"
 #include "WindVaneCompass.h"
 #include "MenuDisplayController.h"
@@ -21,7 +22,8 @@ WindVaneMenu::WindVaneMenu(const WindVaneMenuConfig& cfg)
       _platform(cfg.platform),
       _logic(),
       _presenter(&cfg.out),
-      _display(cfg.platform, cfg.io, cfg.out, _presenter, _logic),
+      _view(cfg.platform, cfg.io, cfg.out, _presenter),
+      _display(cfg.platform, _view, _logic),
       _stateStack(),
       _mainHandlers() {
   pushState(State::Main);
@@ -126,7 +128,8 @@ void WindVaneMenu::handleCalibrateSelection() {
 
 void WindVaneMenu::handleDiagnosticsSelection() {
   pushState(State::Diagnostics);
-  DiagnosticsMenu menu(_vane, _io, _buffered, _diag, _out, _platform);
+  DiagnosticsView diagView(_io, _out, _platform);
+  DiagnosticsMenu menu(_vane, _buffered, diagView, _diag);
   menu.show(_display.lastCalibration());
   popState();
   showMainMenu();

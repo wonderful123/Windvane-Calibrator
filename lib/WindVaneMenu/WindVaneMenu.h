@@ -5,6 +5,7 @@
 #include <WindVane.h>
 #include "MenuLogic.h"
 #include "MenuPresenter.h"
+#include "MenuDisplayView.h"
 #include "MenuDisplayController.h"
 #include "MenuTypes.h"
 #include <Platform/IPlatform.h>
@@ -46,6 +47,7 @@ class WindVaneMenu {
 
   MenuLogic _logic;
   MenuPresenter _presenter;
+  MenuDisplayView _view;
   MenuDisplayController _display;
   enum class State {
     Main,

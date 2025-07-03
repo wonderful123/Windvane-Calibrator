@@ -4,13 +4,12 @@
 #include "WindVaneStatus.h"
 #include <Platform/IPlatform.h>
 #include <Platform/TimeUtils.h>
-#include <UI/IIO.h>
+#include "MenuDisplayView.h"
 #include <string>
 
 class MenuDisplayController {
 public:
-    MenuDisplayController(IPlatform& platform, IUserIO& io, IOutput& out,
-                          MenuPresenter& presenter,
+    MenuDisplayController(IPlatform& platform, MenuDisplayView& view,
                           MenuLogic& logic);
     void begin(WindVane& vane);
     void onInput();
@@ -27,9 +26,7 @@ private:
     void clearExpiredMessage();
 
     IPlatform& _platform;
-    IUserIO& _io;
-    IOutput& _out;
-    MenuPresenter& _presenter;
+    MenuDisplayView& _view;
     MenuLogic& _logic;
 
     platform::TimeMs _lastActivity;
