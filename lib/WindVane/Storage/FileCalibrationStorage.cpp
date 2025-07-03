@@ -50,11 +50,14 @@ StorageResult FileCalibrationStorage::load(std::vector<ClusterData>& clusters, i
     return {};
 }
 
-void FileCalibrationStorage::clear() {
+StorageResult FileCalibrationStorage::clear() {
     std::error_code ec;
     std::filesystem::remove(_path, ec);
     _lastTimestamp = 0;
     _schemaVersion = 0;
+    if (ec)
+        return {StorageStatus::IoError, ec.message()};
+    return {};
 }
 
 StorageResult FileCalibrationStorage::writeBlob(const std::vector<unsigned char>& data) {

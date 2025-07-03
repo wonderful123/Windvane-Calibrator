@@ -8,5 +8,5 @@ public:
     virtual ~IBlobStorage() = default;
     virtual StorageResult writeBlob(const std::vector<unsigned char>& data) = 0;
     virtual StorageResult readBlob(std::vector<unsigned char>& data) = 0;
-    virtual void clear() = 0;
+    virtual StorageResult clear() = 0;
 };

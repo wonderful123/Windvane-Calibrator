@@ -46,8 +46,11 @@ platform::TimeMs WindVane::lastCalibrationTimestamp() const {
   return _storage ? platform::TimeMs{_storage->lastTimestamp()} : platform::TimeMs{0};
 }
 
-void WindVane::clearCalibration() const {
-  if (_storage) _storage->clear();
+StorageResult WindVane::clearCalibration() const {
+  if (_storage) {
+    return _storage->clear();
+  }
+  return {};
 }
 
 void WindVane::setCalibrationConfig(const CalibrationConfig& cfg) {

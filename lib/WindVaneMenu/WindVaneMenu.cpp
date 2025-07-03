@@ -7,6 +7,7 @@
 #include "MenuDisplayController.h"
 #include <Calibration/CalibrationResult.h>
 #include <Platform/IPlatform.h>
+#include <Storage/StorageResult.h>
 #include <cstdio>
 #include <limits>
 
@@ -168,13 +169,15 @@ void WindVaneMenu::clearScreen() const { _out.clear(); }
 void WindVaneMenu::pushState(State s) {
   _stateStack.push_back(s);
   _settingsMgr.setMenuState(static_cast<PersistedMenuState>(s));
-  _settingsMgr.save();
+  StorageResult res = _settingsMgr.save();
+  if (!res.ok()) _diag.warn("Failed to persist menu state");
 }
 
 void WindVaneMenu::popState() {
   if (!_stateStack.empty()) _stateStack.pop_back();
   _settingsMgr.setMenuState(static_cast<PersistedMenuState>(currentState()));
-  _settingsMgr.save();
+  StorageResult res = _settingsMgr.save();
+  if (!res.ok()) _diag.warn("Failed to persist menu state");
 }
 
 WindVaneMenu::State WindVaneMenu::currentState() const {

@@ -73,11 +73,11 @@ StorageResult EEPROMCalibrationStorage::load(std::vector<ClusterData>& clusters,
     return {};
 }
 
-void EEPROMCalibrationStorage::clear() {
+StorageResult EEPROMCalibrationStorage::clear() {
     CalibrationStorageHeader hdr{};
     if (!platform_factory::has_eeprom()) {
         (void)hdr;
-        return;
+        return {StorageStatus::IoError, "no eeprom"};
     }
     platform_factory::eeprom_begin(_eepromSize);
     for (int i = 0; i < _slotCount; ++i) {
@@ -86,6 +86,7 @@ void EEPROMCalibrationStorage::clear() {
     }
     platform_factory::eeprom_commit();
     platform_factory::eeprom_end();
+    return {};
 }
 
 StorageResult EEPROMCalibrationStorage::writeBlob(const std::vector<unsigned char>& data) {

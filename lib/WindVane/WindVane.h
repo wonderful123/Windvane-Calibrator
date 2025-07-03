@@ -12,6 +12,7 @@
 #include "IADC.h"
 #include "UI/IIO.h"
 #include "Storage/ICalibrationStorage.h"
+#include "Storage/StorageResult.h"
 #include <Platform/TimeUtils.h>
 
 /**
@@ -44,7 +45,7 @@ class WindVane {
   CalibrationResult runCalibration();  // Advanced
   platform::TimeMs lastCalibrationTimestamp() const;
   CalibrationManager::CalibrationStatus calibrationStatus() const;
-  void clearCalibration() const;
+  StorageResult clearCalibration() const;
   void setCalibrationConfig(const CalibrationConfig &cfg);
   CalibrationConfig getCalibrationConfig() const;
   ICalibrationStorage *storage() const { return _storage; }
