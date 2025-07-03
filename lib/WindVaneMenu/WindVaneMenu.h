@@ -1,26 +1,29 @@
 #pragma once
 #include <Diagnostics/IBufferedDiagnostics.h>
 #include <Diagnostics/IDiagnostics.h>
-#include <IO/IIOHandler.h>
-#include <IO/INumericReader.h>  // <-- ADD THIS INCLUDE
+#include <IO/IUserIO.h>
 #include <IO/IOutput.h>
-#include <Settings/ISettingsStorage.h>
-#include <Settings/SettingsData.h>
 #include <Storage/ICalibrationStorage.h>
 #include <WindVane.h>
-
+#include "WindVaneMenuLogic.h"
+#include "WindVaneMenuPresenter.h"
+#include "WindVaneMenuTypes.h"
+#include <Settings/SettingsManager.h>
 #include <string>
+#include <functional>
+#include <unordered_map>
+#include <vector>
 
+/** Dependencies required by the menu. All references are borrowed and must
+ * outlive the menu instance. */
 struct WindVaneMenuConfig {
-  WindVane* vane{};
-  IIOHandler* io{};
-  IDiagnostics* diag{};
-  IBufferedDiagnostics* bufferedDiag{};
-  IOutput* out{};
-  ICalibrationStorage* storage{};
-  ISettingsStorage* settingsStorage{};
-  SettingsData* settings{};
-  INumericReader* numeric{};  // <-- ADD TO CONFIG, pass to SettingsMenu
+  WindVane& vane;
+  IUserIO& io;
+  IDiagnostics& diag;
+  IBufferedDiagnostics* bufferedDiag;
+  IOutput& out;
+  ICalibrationStorage& storage;
+  SettingsManager& settingsMgr;
 };
 
 class WindVaneMenu {
@@ -30,16 +33,16 @@ class WindVaneMenu {
   void update();
 
  private:
-  WindVane* _vane;
-  IIOHandler* _io;
-  IDiagnostics* _diag;
+  WindVane& _vane;
+  IUserIO& _io;
+  IDiagnostics& _diag;
   IBufferedDiagnostics* _buffered;
-  IOutput* _out;
-  ICalibrationStorage* _storage;
-  ISettingsStorage* _settingsStorage;
-  SettingsData* _settings;
-  INumericReader* _numeric;  // <-- DECLARE _numeric
+  IOutput& _out;
+  ICalibrationStorage& _storage;
+  SettingsManager& _settingsMgr;
 
+  WindVaneMenuLogic _logic;
+  WindVaneMenuPresenter _presenter;
   enum class State {
     Main,
     LiveDisplay,
@@ -48,24 +51,19 @@ class WindVaneMenu {
     Settings,
     Help
   };
-  State _state;
+  std::vector<State> _stateStack;
+  std::unordered_map<char, std::function<void()>> _mainHandlers;
   unsigned long _lastActivity;
   unsigned long _lastCalibration;
 
-  enum class StatusLevel { Normal, Warning, Error };
   std::string _statusMsg;
-  StatusLevel _statusLevel{StatusLevel::Normal};
+  MenuStatusLevel _statusLevel{MenuStatusLevel::Normal};
   unsigned long _msgExpiry{0};
 
   void showStatusLine();
   void showMainMenu();
   void handleMainInput(char c);
   void updateLiveDisplay();
-  const char* statusText(CalibrationManager::CalibrationStatus st) const;
-  void renderStatusLineArduino(float dir, const char* statusStr,
-                               unsigned long ago);
-  void renderStatusLineHost(float dir, const char* statusStr,
-                            unsigned long ago);
   void clearExpiredMessage();
   void runCalibration();
   void handleDisplaySelection();
@@ -76,6 +74,10 @@ class WindVaneMenu {
   void handleUnknownSelection();
   void showHelp();
   void clearScreen();
-  void setStatusMessage(const char* msg, StatusLevel lvl = StatusLevel::Normal,
+  void setStatusMessage(const char* msg, MenuStatusLevel lvl = MenuStatusLevel::Normal,
                         unsigned long ms = 3000);
+  void pushState(State s);
+  void popState();
+  State currentState() const;
+  void initMainHandlers();
 };

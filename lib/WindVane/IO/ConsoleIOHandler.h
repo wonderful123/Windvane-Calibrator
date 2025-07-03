@@ -1,12 +1,11 @@
 #pragma once
-#include "IIOHandler.h"
-#include "INumericReader.h"
+#include "IUserIO.h"
 #include <chrono>
 #include <iostream>
 #include <limits>
 #include <thread>
 
-class ConsoleIOHandler : public IIOHandler, public INumericReader {
+class ConsoleIOHandler : public IUserIO {
 public:
     bool hasInput() override {
         return std::cin.rdbuf()->in_avail();

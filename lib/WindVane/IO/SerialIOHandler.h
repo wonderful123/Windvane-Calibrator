@@ -1,11 +1,10 @@
 #pragma once
-#include "IIOHandler.h"
-#include "INumericReader.h"
+#include "IUserIO.h"
 #ifdef ARDUINO
 #include <Arduino.h>
 #endif
 
-class SerialIOHandler : public IIOHandler, public INumericReader {
+class SerialIOHandler : public IUserIO {
 public:
     bool hasInput() override {
 #ifdef ARDUINO

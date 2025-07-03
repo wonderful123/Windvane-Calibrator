@@ -1,17 +1,9 @@
 #include "DiagnosticsMenu.h"
+#include <Platform/Platform.h>
 #include <IO/IOutput.h>
-#ifdef ARDUINO
-#include <Arduino.h>
-#else
+#ifndef ARDUINO
 #include <iostream>
 #include <limits>
-#include <chrono>
-static unsigned long millis() {
-  static auto start = std::chrono::steady_clock::now();
-  return std::chrono::duration_cast<std::chrono::milliseconds>(
-             std::chrono::steady_clock::now() - start)
-      .count();
-}
 #endif
 
 DiagnosticsMenu::DiagnosticsMenu(WindVane* vane, IIOHandler* io,
@@ -51,7 +43,7 @@ void DiagnosticsMenu::renderScreen(size_t index, unsigned long lastCalibration) 
         default: _out->writeln("Not started"); break;
     }
     _out->write("Last calibration: ");
-    snprintf(buf, sizeof(buf), "%lu", (millis() - lastCalibration)/60000UL);
+    snprintf(buf, sizeof(buf), "%lu", (platformMillis() - lastCalibration)/60000UL);
     _out->write(buf);
     _out->writeln(" minutes ago");
     if (_buffered) {

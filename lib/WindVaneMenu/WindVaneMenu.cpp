@@ -2,25 +2,14 @@
 
 #include "DiagnosticsMenu.h"
 #include "SettingsMenu.h"
+#include "WindVaneCompass.h"
+#include <Platform/Platform.h>
 
-#ifdef ARDUINO
-#include <Arduino.h>
-#else
-#include <chrono>
+#ifndef ARDUINO
 #include <cstdio>
 #include <limits>
-static unsigned long millis() {
-  using namespace std::chrono;
-  static auto start = steady_clock::now();
-  return duration_cast<milliseconds>(steady_clock::now() - start).count();
-}
 #endif
 
-static const char* compassPoint(float deg) {
-  static const char* pts[] = {"N", "NE", "E", "SE", "S", "SW", "W", "NW"};
-  int idx = static_cast<int>((deg + 22.5f) / 45.0f) & 7;
-  return pts[idx];
-}
 
 WindVaneMenu::WindVaneMenu(const WindVaneMenuConfig& cfg)
     : _vane(cfg.vane),
@@ -29,72 +18,64 @@ WindVaneMenu::WindVaneMenu(const WindVaneMenuConfig& cfg)
       _buffered(cfg.bufferedDiag),
       _out(cfg.out),
       _storage(cfg.storage),
-      _settingsStorage(cfg.settingsStorage),
-      _settings(cfg.settings),
-      _numeric(cfg.numeric),  // <-- ASSIGN _numeric from config
-      _state(State::Main),
-      _lastActivity(0),
-      _lastCalibration(0) {}
+      _settingsMgr(cfg.settingsMgr),
+      _logic(),
+        _presenter(&cfg.out),
+        _stateStack(),
+        _mainHandlers(),
+        _lastActivity(0),
+        _lastCalibration(0) {
+  pushState(State::Main);
+  initMainHandlers();
+}
 
 void WindVaneMenu::begin() {
+  _stateStack.clear();
+  pushState(State::Main);
   showMainMenu();
-  _lastActivity = millis();
-  _lastCalibration = _vane->lastCalibrationTimestamp();
+  _lastActivity = platformMillis();
+  _lastCalibration = _vane.lastCalibrationTimestamp();
 }
 
 void WindVaneMenu::update() {
-  if (_io->hasInput()) {
-    char c = _io->readInput();
-    _lastActivity = millis();
-    switch (_state) {
-      case State::Main:
-        handleMainInput(c);
-        break;
-      case State::LiveDisplay:
-        _state = State::Main;
-        showMainMenu();
-        break;
-      default:
-        break;
+  if (_io.hasInput()) {
+    char c = _io.readInput();
+    _lastActivity = platformMillis();
+    if (currentState() == State::Main) {
+      handleMainInput(c);
+    } else if (currentState() == State::LiveDisplay) {
+      popState();
+      showMainMenu();
     }
   }
-  switch (_state) {
-    case State::LiveDisplay:
-      updateLiveDisplay();
-      break;
-    default:
-      break;
+  if (currentState() == State::LiveDisplay) {
+    updateLiveDisplay();
   }
-  if (millis() - _lastActivity > 30000 && _state != State::Main) {
-    _state = State::Main;
+  if (platformMillis() - _lastActivity > 30000 && currentState() != State::Main) {
+    while (currentState() != State::Main) popState();
     showMainMenu();
   }
   showStatusLine();
 }
 
 void WindVaneMenu::showStatusLine() {
-  float dir = _vane->direction();
-  unsigned long ago = (millis() - _lastCalibration) / 60000UL;
-  const char* st = statusText(_vane->calibrationStatus());
-#ifdef ARDUINO
-  renderStatusLineArduino(dir, st, ago);
-#else
-  renderStatusLineHost(dir, st, ago);
-#endif
+  WindVaneStatus st = _logic.queryStatus(_vane, _lastCalibration);
+  const char* statusStr = _logic.statusText(st.calibrationStatus);
+  PLATFORM_RENDER_STATUSLINE(_presenter, st, statusStr, _statusMsg, _statusLevel);
   clearExpiredMessage();
 }
 
 void WindVaneMenu::showMainMenu() {
   clearScreen();
-  _out->writeln("");
-  _out->writeln("=== Wind Vane Menu ===");
-  _out->writeln("[D] Display direction ");
-  _out->writeln("[C] Calibrate        ");
-  _out->writeln("[G] Diagnostics      ");
-  _out->writeln("[S] Settings         ");
-  _out->writeln("[H] Help             ");
+  _out.writeln("");
+  _out.writeln("=== Wind Vane Menu ===");
+  _out.writeln("[D] Display direction ");
+  _out.writeln("[C] Calibrate        ");
+  _out.writeln("[G] Diagnostics      ");
+  _out.writeln("[S] Settings         ");
+  _out.writeln("[H] Help             ");
 #ifndef ARDUINO
-  _out->writeln("Choose option: ");
+  _out.writeln("Choose option: ");
 #endif
 }
 
@@ -103,177 +84,127 @@ void WindVaneMenu::handleMainInput(char c) {
     showMainMenu();
     return;
   }
-  switch (c) {
-    case 'D':
-    case 'd':
-      handleDisplaySelection();
-      break;
-    case 'C':
-    case 'c':
-      handleCalibrateSelection();
-      break;
-    case 'G':
-    case 'g':
-      handleDiagnosticsSelection();
-      break;
-    case 'S':
-    case 's':
-      handleSettingsSelectionMenu();
-      break;
-    case 'H':
-    case 'h':
-      handleHelpSelection();
-      break;
-    default:
-      handleUnknownSelection();
-      break;
+  auto it = _mainHandlers.find(c);
+  if (it != _mainHandlers.end()) {
+    it->second();
+  } else {
+    handleUnknownSelection();
   }
 }
 
 void WindVaneMenu::updateLiveDisplay() {
   static unsigned long last = 0;
-  if (millis() - last > 1000) {
-    last = millis();
-    float d = _vane->direction();
+  if (platformMillis() - last > 1000) {
+    last = platformMillis();
+    float d = _vane.direction();
     char buf[64];
     snprintf(buf, sizeof(buf), "\rDir: %.1f\xC2\xB0 (%s)   \r", d,
              compassPoint(d));
-    _out->write(buf);
+    _out.write(buf);
   }
-  if (_io->hasInput()) {
-    _io->readInput();
-    _state = State::Main;
+  if (_io.hasInput()) {
+    _io.readInput();
+    popState();
     showMainMenu();
   }
 }
 
-const char* WindVaneMenu::statusText(
-    CalibrationManager::CalibrationStatus st) const {
-  switch (st) {
-    case CalibrationManager::CalibrationStatus::NotStarted:
-      return "Uncal";
-    case CalibrationManager::CalibrationStatus::AwaitingStart:
-      return "Awaiting";
-    case CalibrationManager::CalibrationStatus::InProgress:
-      return "Calibrating";
-    case CalibrationManager::CalibrationStatus::Completed:
-      return "OK";
-  }
-  return "Unknown";
-}
-
-void WindVaneMenu::renderStatusLineArduino(float dir, const char* statusStr,
-                                          unsigned long ago) {
-  char line[80];
-  snprintf(line, sizeof(line),
-           "\rDir:%6.1f\xC2\xB0 %-2s Status:%-10s Cal:%4lum", dir,
-           compassPoint(dir), statusStr, ago);
-  _out->write(line);
-  if (!_statusMsg.empty() && millis() < _msgExpiry) {
-    if (_statusLevel != StatusLevel::Normal) _out->write(" !! ");
-    _out->write(_statusMsg.c_str());
-  }
-  _out->write("    \r");
-}
-
-void WindVaneMenu::renderStatusLineHost(float dir, const char* statusStr,
-                                       unsigned long ago) {
-  char line[80];
-  snprintf(line, sizeof(line),
-           "\rDir:%6.1f\xC2\xB0 %-2s Status:%-10s Cal:%4lum", dir,
-           compassPoint(dir), statusStr, ago);
-  _out->write(line);
-  if (!_statusMsg.empty() && millis() < _msgExpiry) {
-    const char* color = "";
-    const char* reset = "";
-    if (_statusLevel == StatusLevel::Warning) {
-      color = "\033[33m";
-      reset = "\033[0m";
-    } else if (_statusLevel == StatusLevel::Error) {
-      color = "\033[31m";
-      reset = "\033[0m";
-    }
-    _out->write(" ");
-    _out->write(color);
-    _out->write(_statusMsg.c_str());
-    _out->write(reset);
-  }
-  _out->write("    \r");
-}
 
 void WindVaneMenu::clearExpiredMessage() {
-  if (!_statusMsg.empty() && millis() >= _msgExpiry) {
+  if (!_statusMsg.empty() && platformMillis() >= _msgExpiry) {
     _statusMsg.clear();
-    _statusLevel = StatusLevel::Normal;
+    _statusLevel = MenuStatusLevel::Normal;
   }
 }
 
 void WindVaneMenu::runCalibration() {
-  if (_io->yesNoPrompt("Start calibration? (Y/N)")) {
-    _vane->runCalibration();
-    _lastCalibration = millis();
-    if (_diag) _diag->info("Calibration completed");
-    setStatusMessage("Calibration complete", StatusLevel::Normal);
+  if (_io.yesNoPrompt("Start calibration? (Y/N)")) {
+    _vane.runCalibration();
+    _lastCalibration = platformMillis();
+    _diag.info("Calibration completed");
+    setStatusMessage("Calibration complete", MenuStatusLevel::Normal);
   }
 }
 
 void WindVaneMenu::handleDisplaySelection() {
-  _state = State::LiveDisplay;
-  if (_vane->calibrationStatus() !=
+  pushState(State::LiveDisplay);
+  if (_vane.calibrationStatus() !=
       CalibrationManager::CalibrationStatus::Completed)
-    setStatusMessage("Warning: uncalibrated", StatusLevel::Warning);
-  _out->writeln("Live direction - press any key to return");
+    setStatusMessage("Warning: uncalibrated", MenuStatusLevel::Warning);
+  _out.writeln("Live direction - press any key to return");
 }
 
 void WindVaneMenu::handleCalibrateSelection() {
-  _state = State::Calibrate;
+  pushState(State::Calibrate);
   runCalibration();
-  _state = State::Main;
+  popState();
   showMainMenu();
 }
 
 void WindVaneMenu::handleDiagnosticsSelection() {
-  _state = State::Diagnostics;
+  pushState(State::Diagnostics);
   DiagnosticsMenu menu(_vane, _io, _buffered, _diag, _out);
   menu.show(_lastCalibration);
-  _state = State::Main;
+  popState();
   showMainMenu();
 }
 
 void WindVaneMenu::handleSettingsSelectionMenu() {
-  _state = State::Settings;
-  SettingsMenu menu(_vane, _io, _numeric, _storage, _settingsStorage, _settings,
-                    _out);
-  menu.run();
-  _state = State::Main;
+  pushState(State::Settings);
+  SettingsMenu menu(&_vane, &_io, &_storage, &_settingsMgr, &_out);
+  popState();
   showMainMenu();
 }
 
 void WindVaneMenu::handleHelpSelection() {
-  _state = State::Help;
+  pushState(State::Help);
   showHelp();
-  _state = State::Main;
+  popState();
   showMainMenu();
 }
 
 void WindVaneMenu::handleUnknownSelection() {
-  setStatusMessage("Unknown option. Press [H] for help.", StatusLevel::Error);
+  setStatusMessage("Unknown option. Press [H] for help.", MenuStatusLevel::Error);
 }
 
 void WindVaneMenu::showHelp() {
-  _out->writeln("--- Help ---");
-  _out->writeln("D: Live wind direction display");
-  _out->writeln("C: Start calibration routine");
-  _out->writeln("G: View diagnostics log");
-  _out->writeln("S: Settings and maintenance");
-  _out->writeln("H: Show this help text");
+  _out.writeln("--- Help ---");
+  _out.writeln("D: Live wind direction display");
+  _out.writeln("C: Start calibration routine");
+  _out.writeln("G: View diagnostics log");
+  _out.writeln("S: Settings and maintenance");
+  _out.writeln("H: Show this help text");
 }
 
-void WindVaneMenu::clearScreen() { _out->clear(); }
+void WindVaneMenu::clearScreen() { _out.clear(); }
 
-void WindVaneMenu::setStatusMessage(const char* msg, StatusLevel lvl,
-                                   unsigned long ms) {
+void WindVaneMenu::setStatusMessage(const char* msg, MenuStatusLevel lvl,
+                                    unsigned long ms) {
   _statusMsg = msg;
   _statusLevel = lvl;
-  _msgExpiry = millis() + ms;
+  _msgExpiry = platformMillis() + ms;
+}
+
+void WindVaneMenu::pushState(State s) { _stateStack.push_back(s); }
+
+void WindVaneMenu::popState() {
+  if (!_stateStack.empty()) _stateStack.pop_back();
+}
+
+WindVaneMenu::State WindVaneMenu::currentState() const {
+  return _stateStack.empty() ? State::Main : _stateStack.back();
+}
+
+void WindVaneMenu::initMainHandlers() {
+  _mainHandlers.clear();
+  _mainHandlers['D'] = [this] { handleDisplaySelection(); };
+  _mainHandlers['d'] = [this] { handleDisplaySelection(); };
+  _mainHandlers['C'] = [this] { handleCalibrateSelection(); };
+  _mainHandlers['c'] = [this] { handleCalibrateSelection(); };
+  _mainHandlers['G'] = [this] { handleDiagnosticsSelection(); };
+  _mainHandlers['g'] = [this] { handleDiagnosticsSelection(); };
+  _mainHandlers['S'] = [this] { handleSettingsSelectionMenu(); };
+  _mainHandlers['s'] = [this] { handleSettingsSelectionMenu(); };
+  _mainHandlers['H'] = [this] { handleHelpSelection(); };
+  _mainHandlers['h'] = [this] { handleHelpSelection(); };
 }
