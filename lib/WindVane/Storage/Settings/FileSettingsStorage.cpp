@@ -4,18 +4,25 @@
 FileSettingsStorage::FileSettingsStorage(const std::string& path)
     : _path(path) {}
 
-void FileSettingsStorage::save(const SettingsData& data) {
+StorageResult FileSettingsStorage::save(const SettingsData& data) {
     std::ofstream ofs(_path);
+    if (!ofs)
+        return {StorageStatus::IoError, "open"};
     ofs << data.spin.threshold << " " << data.spin.bufferSize << " "
         << data.spin.expectedPositions << " " << data.spin.sampleDelayMs << " "
         << data.spin.stallTimeoutSec << "\n";
+    if (!ofs)
+        return {StorageStatus::IoError, "write"};
+    return {};
 }
 
-bool FileSettingsStorage::load(SettingsData& data) {
+StorageResult FileSettingsStorage::load(SettingsData& data) {
     std::ifstream ifs(_path);
     if (!ifs)
-        return false;
+        return {StorageStatus::NotFound, "open"};
     ifs >> data.spin.threshold >> data.spin.bufferSize >> data.spin.expectedPositions
         >> data.spin.sampleDelayMs >> data.spin.stallTimeoutSec;
-    return static_cast<bool>(ifs);
+    if (!ifs)
+        return {StorageStatus::IoError, "read"};
+    return {};
 }

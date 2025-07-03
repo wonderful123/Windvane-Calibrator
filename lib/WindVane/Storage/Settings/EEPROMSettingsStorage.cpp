@@ -3,27 +3,29 @@
 EEPROMSettingsStorage::EEPROMSettingsStorage(size_t start, size_t eepromSize)
     : _start(start), _size(eepromSize) {}
 
-void EEPROMSettingsStorage::save(const SettingsData& data) {
+StorageResult EEPROMSettingsStorage::save(const SettingsData& data) {
 #ifdef ARDUINO
     EEPROM.begin(_size);
     size_t addr = _start;
     EEPROM.put(addr, data.spin); addr += sizeof(SpinningConfig);
     EEPROM.commit();
     EEPROM.end();
+    return {};
 #else
     (void)data;
+    return {StorageStatus::IoError, "no eeprom"};
 #endif
 }
 
-bool EEPROMSettingsStorage::load(SettingsData& data) {
+StorageResult EEPROMSettingsStorage::load(SettingsData& data) {
 #ifdef ARDUINO
     EEPROM.begin(_size);
     size_t addr = _start;
     EEPROM.get(addr, data.spin); addr += sizeof(SpinningConfig);
     EEPROM.end();
-    return true;
+    return {};
 #else
     (void)data;
-    return false;
+    return {StorageStatus::IoError, "no eeprom"};
 #endif
 }

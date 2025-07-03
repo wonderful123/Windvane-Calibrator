@@ -9,7 +9,7 @@ EEPROMCalibrationStorage::EEPROMCalibrationStorage(IPlatform& platform,
                                                    size_t eepromSize)
     : _startAddress(startAddress), _eepromSize(eepromSize), _platform(platform) {}
 
-void EEPROMCalibrationStorage::save(const std::vector<ClusterData>& clusters, int version) {
+StorageResult EEPROMCalibrationStorage::save(const std::vector<ClusterData>& clusters, int version) {
 #ifdef ARDUINO
     size_t addr = _startAddress;
     EEPROM.begin(_eepromSize);
@@ -25,13 +25,15 @@ void EEPROMCalibrationStorage::save(const std::vector<ClusterData>& clusters, in
         EEPROM.put(addr, c); addr += sizeof(ClusterData);
     }
     EEPROM.commit();
+    return {};
 #else
     (void)clusters;
     (void)version;
+    return {StorageStatus::IoError, "no eeprom"};
 #endif
 }
 
-bool EEPROMCalibrationStorage::load(std::vector<ClusterData>& clusters, int &version) {
+StorageResult EEPROMCalibrationStorage::load(std::vector<ClusterData>& clusters, int &version) {
 #ifdef ARDUINO
     size_t addr = _startAddress;
     EEPROM.begin(_eepromSize);
@@ -43,7 +45,7 @@ bool EEPROMCalibrationStorage::load(std::vector<ClusterData>& clusters, int &ver
     uint16_t count = hdr.count;
     if (count == 0 || count > 64) {
         EEPROM.end();
-        return false;
+        return {StorageStatus::InvalidFormat, "count"};
     }
     clusters.resize(count);
     for (uint16_t i = 0; i < count; ++i) {
@@ -54,13 +56,13 @@ bool EEPROMCalibrationStorage::load(std::vector<ClusterData>& clusters, int &ver
     EEPROM.end();
     uint32_t crc = crc32(clusters);
     if (crc != hdr.crc) {
-        return false;
+        return {StorageStatus::CorruptData, "crc"};
     }
-    return true;
+    return {};
 #else
     (void)clusters;
     (void)version;
-    return false;
+    return {StorageStatus::IoError, "no eeprom"};
 #endif
 }
 
@@ -79,31 +81,32 @@ void EEPROMCalibrationStorage::clear() {
 #endif
 }
 
-bool EEPROMCalibrationStorage::writeBlob(const std::vector<unsigned char>& data) {
+StorageResult EEPROMCalibrationStorage::writeBlob(const std::vector<unsigned char>& data) {
 #ifdef ARDUINO
-    if (data.size() + _startAddress > _eepromSize) return false;
+    if (data.size() + _startAddress > _eepromSize)
+        return {StorageStatus::InvalidFormat, "size"};
     EEPROM.begin(_eepromSize);
     for (size_t i = 0; i < data.size(); ++i)
         EEPROM.write(_startAddress + i, data[i]);
     EEPROM.commit();
     EEPROM.end();
-    return true;
+    return {};
 #else
     (void)data;
-    return false;
+    return {StorageStatus::IoError, "no eeprom"};
 #endif
 }
 
-bool EEPROMCalibrationStorage::readBlob(std::vector<unsigned char>& data) {
+StorageResult EEPROMCalibrationStorage::readBlob(std::vector<unsigned char>& data) {
 #ifdef ARDUINO
     EEPROM.begin(_eepromSize);
     data.resize(_eepromSize - _startAddress);
     for (size_t i = 0; i < data.size(); ++i)
         data[i] = EEPROM.read(_startAddress + i);
     EEPROM.end();
-    return true;
+    return {};
 #else
     (void)data;
-    return false;
+    return {StorageStatus::IoError, "no eeprom"};
 #endif
 }

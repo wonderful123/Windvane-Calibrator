@@ -16,7 +16,7 @@ SpinningMethod::SpinningMethod(const SpinningMethodDeps &deps)
       _diag(deps.diag), _config(deps.config) {
   int version = 0;
   std::vector<ClusterData> clusters;
-  if (_storage.load(clusters, version))
+  if (_storage.load(clusters, version).ok())
     _clusterMgr.setClusters(clusters);
 }
 

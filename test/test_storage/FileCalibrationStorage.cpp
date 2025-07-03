@@ -11,7 +11,7 @@ TEST(FileCalibrationStorage, SaveLoadRoundTrip) {
 
     std::vector<ClusterData> out;
     int version = 0;
-    ASSERT_TRUE(store.load(out, version));
+    ASSERT_TRUE(store.load(out, version).ok());
     EXPECT_EQ(version, 2);
     EXPECT_EQ(out.size(), clusters.size());
     EXPECT_EQ(store.getSchemaVersion(), 2);
@@ -33,5 +33,5 @@ TEST(FileCalibrationStorage, DetectCorruption) {
 
     std::vector<ClusterData> out;
     int version = 0;
-    EXPECT_FALSE(store.load(out, version));
+    EXPECT_FALSE(store.load(out, version).ok());
 }

@@ -4,15 +4,15 @@
 SettingsManager::SettingsManager(ISettingsStorage& storage, IDiagnostics& diag)
     : _storage(storage), _data(), _diag(diag) {}
 
-bool SettingsManager::load() {
-    if (_storage.load(_data)) {
-        ensureValid();
-        _diag.info("Settings loaded");
-        return true;
-    }
+StorageResult SettingsManager::load() {
+    StorageResult res = _storage.load(_data);
     ensureValid();
-    _diag.warn("Failed to load settings; using defaults");
-    return false;
+    if (res.ok()) {
+        _diag.info("Settings loaded");
+    } else {
+        _diag.warn("Failed to load settings; using defaults");
+    }
+    return res;
 }
 
 void SettingsManager::apply(WindVane& vane) const {
@@ -21,9 +21,13 @@ void SettingsManager::apply(WindVane& vane) const {
     vane.setCalibrationConfig(cfg);
 }
 
-void SettingsManager::save() const {
-    _storage.save(_data);
-    _diag.info("Settings saved");
+StorageResult SettingsManager::save() const {
+    StorageResult res = _storage.save(_data);
+    if (res.ok())
+        _diag.info("Settings saved");
+    else
+        _diag.warn("Failed to save settings");
+    return res;
 }
 
 float SettingsManager::spinThreshold() const { return _data.spin.threshold; }

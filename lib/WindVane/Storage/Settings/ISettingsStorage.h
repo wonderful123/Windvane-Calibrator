@@ -1,9 +1,10 @@
 #pragma once
 #include "SettingsData.h"
+#include "../StorageResult.h"
 
 class ISettingsStorage {
 public:
     virtual ~ISettingsStorage() = default;
-    virtual void save(const SettingsData& data) = 0;
-    virtual bool load(SettingsData& data) = 0;
+    virtual StorageResult save(const SettingsData& data) = 0;
+    virtual StorageResult load(SettingsData& data) = 0;
 };

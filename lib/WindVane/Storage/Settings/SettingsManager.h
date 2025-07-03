@@ -1,6 +1,7 @@
 #pragma once
 #include "SettingsData.h"
 #include "ISettingsStorage.h"
+#include "../StorageResult.h"
 #include <Diagnostics/IDiagnostics.h>
 #include <WindVane.h>
 
@@ -9,9 +10,9 @@ class SettingsManager {
 public:
     SettingsManager(ISettingsStorage& storage, IDiagnostics& diag);
 
-    bool load();
+    StorageResult load();
     void apply(WindVane& vane) const;
-    void save() const;
+    StorageResult save() const;
 
     const SettingsData& data() const { return _data; }
 
