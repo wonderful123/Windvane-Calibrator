@@ -2,7 +2,7 @@
 #include "IDiagnosticsSink.h"
 #include <UI/IIO.h>
 
-class BasicDiagnostics : public IDiagnosticsSink {
+class BasicDiagnostics final : public IDiagnosticsSink {
 public:
     explicit BasicDiagnostics(IOutput* out) : _out(out) {}
     void handle(const DiagnosticsEvent& ev) override {

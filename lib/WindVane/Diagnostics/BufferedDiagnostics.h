@@ -5,7 +5,7 @@
 #include <deque>
 #include <string>
 
-class BufferedDiagnostics : public IDiagnosticsSink, public IBufferedDiagnostics {
+class BufferedDiagnostics final : public IDiagnosticsSink, public IBufferedDiagnostics {
 public:
     explicit BufferedDiagnostics(size_t maxEntries = 10, IOutput* out = nullptr)
         : _maxEntries(maxEntries), _out(out) {}

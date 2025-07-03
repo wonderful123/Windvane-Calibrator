@@ -6,18 +6,18 @@
 
 class DiagnosticsMenu {
 public:
-    DiagnosticsMenu(WindVane* vane, IUserIO* io,
-                    IBufferedDiagnostics* buffered, IDiagnostics* diag,
-                    IOutput* out, IPlatform& platform);
+    DiagnosticsMenu(WindVane& vane, IUserIO& io,
+                    IBufferedDiagnostics* buffered, IDiagnostics& diag,
+                    IOutput& out, IPlatform& platform);
     void show(platform::TimeMs lastCalibration) const;
     enum class SelfTestStatus { Ok, Failed };
 private:
-    WindVane* _vane;
-    IUserIO* _io;
+    WindVane& _vane;
+    IUserIO& _io;
     IBufferedDiagnostics* _buffered;
-    IDiagnostics* _diag;
-    IOutput* _out;
-    IPlatform* _platform;
+    IDiagnostics& _diag;
+    IOutput& _out;
+    IPlatform& _platform;
 
     char readCharBlocking() const;
     void renderScreen(size_t index, platform::TimeMs lastCalibration) const;

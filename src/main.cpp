@@ -22,8 +22,8 @@ PlatformDiagnosticsSink sink(outPtr.get());
 diag.addSink(&sink);
 SettingsManager settingsMgr(*settingsStorage, diag);
 
-WindVaneConfig vaneCfg{adc.get(), WindVaneType::REED_SWITCH,
-                       CalibrationMethod::SPINNING, calibStorage.get(), &io, &diag,
+WindVaneConfig vaneCfg{*adc, WindVaneType::REED_SWITCH,
+                       CalibrationMethod::SPINNING, calibStorage.get(), io, diag,
                        {}};
 WindVane vane(vaneCfg);
 

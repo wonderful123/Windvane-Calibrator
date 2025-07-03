@@ -9,9 +9,9 @@
 
 struct StrategyContext {
     CalibrationMethod method{CalibrationMethod::SPINNING};
-    IADC *adc{};
-    ICalibrationStorage *storage{};
-    IDiagnostics *diag{};
+    IADC& adc;
+    ICalibrationStorage* storage{nullptr};
+    IDiagnostics& diag;
     CalibrationConfig config{};
 };
 

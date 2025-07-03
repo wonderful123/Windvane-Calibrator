@@ -25,12 +25,12 @@ enum class WindVaneType { REED_SWITCH };
  * @brief All dependencies for custom advanced use.
  */
 struct WindVaneConfig {
-  IADC *adc{};
+  IADC& adc;
   WindVaneType type{WindVaneType::REED_SWITCH};
   CalibrationMethod method{CalibrationMethod::SPINNING};
-  ICalibrationStorage *storage{};
-  IUserIO *io{};
-  IDiagnostics *diag{};
+  ICalibrationStorage* storage{nullptr};
+  IUserIO& io;
+  IDiagnostics& diag;
   CalibrationConfig config{};
 };
 
@@ -51,8 +51,8 @@ class WindVane {
 
  private:
   float getRawDirection() const;
-  IADC *_adc;
+  IADC& _adc;
   WindVaneType _type;
   std::unique_ptr<CalibrationManager> _calibrationManager;
-  ICalibrationStorage *_storage;
+  ICalibrationStorage* _storage;
 };

@@ -7,7 +7,7 @@
 #include <Arduino.h>
 #endif
 
-class SerialIOHandler : public IUserIO {
+class SerialIOHandler final : public IUserIO {
 public:
     bool hasInput() const override { return Serial.available(); }
     char readInput() const override { return Serial.read(); }

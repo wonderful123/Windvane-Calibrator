@@ -29,7 +29,7 @@ float WindVane::direction() const {
                              : raw * 360.0f;
 }
 
-float WindVane::getRawDirection() const { return _adc ? _adc->read() : 0.0f; }
+float WindVane::getRawDirection() const { return _adc.read(); }
 
 CalibrationResult WindVane::runCalibration() {
   if (_calibrationManager) return _calibrationManager->runCalibration();

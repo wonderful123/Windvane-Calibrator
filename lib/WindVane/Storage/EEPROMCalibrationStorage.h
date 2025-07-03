@@ -8,7 +8,7 @@
 #include <EEPROM.h>
 #endif
 
-class EEPROMCalibrationStorage : public CalibrationStorageBase, public IBlobStorage {
+class EEPROMCalibrationStorage final : public CalibrationStorageBase, public IBlobStorage {
 public:
     EEPROMCalibrationStorage(IPlatform& platform,
                              size_t startAddress = 0,

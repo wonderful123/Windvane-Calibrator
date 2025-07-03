@@ -7,7 +7,7 @@
 #include <string>
 #include <cstdint>
 
-class FileCalibrationStorage : public CalibrationStorageBase, public IBlobStorage {
+class FileCalibrationStorage final : public CalibrationStorageBase, public IBlobStorage {
 public:
     explicit FileCalibrationStorage(const std::string& path);
     void save(const std::vector<ClusterData>& clusters, int version) override;

@@ -5,7 +5,7 @@
 #else
 #include <Arduino.h>
 #endif
-class SerialOutput : public IOutput {
+class SerialOutput final : public IOutput {
 public:
     void write(const char* text) const override { Serial.print(text); }
     void writeln(const char* text) const override { Serial.println(text); }

@@ -17,9 +17,9 @@ class IADC;
 // while the user rotates the vane.
 
 struct SpinningMethodDeps {
-  IADC *adc{};
-  ICalibrationStorage *storage{};
-  IDiagnostics *diag{};
+  IADC& adc;
+  ICalibrationStorage& storage;
+  IDiagnostics& diag;
   SpinningConfig config{};
 };
 
@@ -47,9 +47,9 @@ public:
   static constexpr int CALIBRATION_VERSION = 1;
 
 private:
-  IADC *_adc;
-  ICalibrationStorage *_storage;
-  IDiagnostics *_diag;
+  IADC& _adc;
+  ICalibrationStorage& _storage;
+  IDiagnostics& _diag;
   ClusterManager _clusterMgr;
   std::deque<float> _recent;
   SpinningConfig _config;
