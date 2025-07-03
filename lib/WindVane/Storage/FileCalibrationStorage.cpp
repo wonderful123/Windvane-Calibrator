@@ -11,6 +11,8 @@ FileCalibrationStorage::FileCalibrationStorage(const std::string& path)
 void FileCalibrationStorage::save(const std::vector<ClusterData>& clusters, int version) {
     backupExisting();
     std::ofstream ofs(_path);
+    if (!ofs)
+        return;
     _lastTimestamp = static_cast<uint32_t>(std::time(nullptr));
     writeHeader(ofs, version);
     writeClusters(ofs, clusters);
@@ -24,6 +26,8 @@ bool FileCalibrationStorage::load(std::vector<ClusterData>& clusters, int &versi
     if (!readHeader(ifs, version))
         return false;
     readClusters(ifs, clusters);
+    if (!ifs)
+        return false;
     return true;
 }
 
@@ -31,6 +35,23 @@ void FileCalibrationStorage::clear() {
     std::error_code ec;
     std::filesystem::remove(_path, ec);
     _lastTimestamp = 0;
+}
+
+bool FileCalibrationStorage::writeBlob(const std::vector<unsigned char>& data) {
+    std::ofstream ofs(_path, std::ios::binary);
+    if (!ofs)
+        return false;
+    ofs.write(reinterpret_cast<const char*>(data.data()), data.size());
+    return static_cast<bool>(ofs);
+}
+
+bool FileCalibrationStorage::readBlob(std::vector<unsigned char>& data) {
+    std::ifstream ifs(_path, std::ios::binary);
+    if (!ifs)
+        return false;
+    data.assign(std::istreambuf_iterator<char>(ifs),
+                std::istreambuf_iterator<char>());
+    return static_cast<bool>(ifs);
 }
 
 void FileCalibrationStorage::backupExisting() const {

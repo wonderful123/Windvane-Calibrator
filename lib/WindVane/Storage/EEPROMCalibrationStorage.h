@@ -1,12 +1,13 @@
 #pragma once
 #include "ICalibrationStorage.h"
+#include "IBlobStorage.h"
 #include <Platform/IPlatform.h>
 #include <cstdint>
 #ifdef ARDUINO
 #include <EEPROM.h>
 #endif
 
-class EEPROMCalibrationStorage : public ICalibrationStorage {
+class EEPROMCalibrationStorage : public ICalibrationStorage, public IBlobStorage {
 public:
     EEPROMCalibrationStorage(IPlatform& platform,
                              size_t startAddress = 0,
@@ -15,6 +16,9 @@ public:
     bool load(std::vector<ClusterData>& clusters, int &version) override;
     uint32_t lastTimestamp() const { return _lastTimestamp; }
     void clear() override;
+
+    bool writeBlob(const std::vector<unsigned char>& data) override;
+    bool readBlob(std::vector<unsigned char>& data) override;
 
 private:
     size_t _startAddress;

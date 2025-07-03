@@ -1,5 +1,6 @@
 #pragma once
 #include "IPlatform.h"
+#include <WindVaneMenu/WindVaneMenuPresenter.h>
 
 #ifdef ARDUINO
 #include <Diagnostics/SerialDiagnostics.h>

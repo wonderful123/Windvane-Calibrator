@@ -75,3 +75,32 @@ void EEPROMCalibrationStorage::clear() {
     /* no-op */
 #endif
 }
+
+bool EEPROMCalibrationStorage::writeBlob(const std::vector<unsigned char>& data) {
+#ifdef ARDUINO
+    if (data.size() + _startAddress > _eepromSize) return false;
+    EEPROM.begin(_eepromSize);
+    for (size_t i = 0; i < data.size(); ++i)
+        EEPROM.write(_startAddress + i, data[i]);
+    EEPROM.commit();
+    EEPROM.end();
+    return true;
+#else
+    (void)data;
+    return false;
+#endif
+}
+
+bool EEPROMCalibrationStorage::readBlob(std::vector<unsigned char>& data) {
+#ifdef ARDUINO
+    EEPROM.begin(_eepromSize);
+    data.resize(_eepromSize - _startAddress);
+    for (size_t i = 0; i < data.size(); ++i)
+        data[i] = EEPROM.read(_startAddress + i);
+    EEPROM.end();
+    return true;
+#else
+    (void)data;
+    return false;
+#endif
+}
