@@ -3,48 +3,50 @@
 #include <WindVaneMenu/WindVaneMenuPresenter.h>
 
 #ifdef ARDUINO
-#include <Diagnostics/SerialDiagnostics.h>
-#include <IO/SerialIOHandler.h>
-#include <IO/SerialOutput.h>
+#include <Diagnostics/BasicDiagnostics.h>
+#include <UI/SerialIOHandler.h>
+#include <UI/SerialOutput.h>
 
 class ArduinoPlatform : public IPlatform {
 public:
-    unsigned long millis() override { return ::millis(); }
+    platform::TimeMs millis() const override { return ::millis(); }
     void renderStatusLine(WindVaneMenuPresenter& presenter,
                           const WindVaneStatus& st,
                           const char* statusStr,
                           const std::string& msg,
-                          MenuStatusLevel level) override {
-        presenter.renderStatusLineArduino(st, statusStr, msg, level);
+                          MenuStatusLevel level) const override {
+        presenter.renderStatusLine(st, statusStr, msg, level, supportsColor());
     }
+    bool supportsColor() const override { return false; }
 };
 using Platform = ArduinoPlatform;
-using PlatformDiagnostics = SerialDiagnostics;
+using PlatformDiagnostics = BasicDiagnostics;
 using PlatformIOHandler = SerialIOHandler;
 using PlatformOutput = SerialOutput;
 #else
-#include <Diagnostics/ConsoleDiagnostics.h>
-#include <IO/ConsoleIOHandler.h>
-#include <IO/ConsoleOutput.h>
+#include <Diagnostics/BasicDiagnostics.h>
+#include <UI/ConsoleIOHandler.h>
+#include <UI/ConsoleOutput.h>
 #include <chrono>
 
 class HostPlatform : public IPlatform {
 public:
-    unsigned long millis() override {
+    platform::TimeMs millis() const override {
         using namespace std::chrono;
         static auto start = steady_clock::now();
-        return duration_cast<milliseconds>(steady_clock::now() - start).count();
+        return duration_cast<milliseconds>(steady_clock::now() - start);
     }
     void renderStatusLine(WindVaneMenuPresenter& presenter,
                           const WindVaneStatus& st,
                           const char* statusStr,
                           const std::string& msg,
-                          MenuStatusLevel level) override {
-        presenter.renderStatusLineHost(st, statusStr, msg, level);
+                          MenuStatusLevel level) const override {
+        presenter.renderStatusLine(st, statusStr, msg, level, supportsColor());
     }
+    bool supportsColor() const override { return true; }
 };
 using Platform = HostPlatform;
-using PlatformDiagnostics = ConsoleDiagnostics;
+using PlatformDiagnostics = BasicDiagnostics;
 using PlatformIOHandler = ConsoleIOHandler;
 using PlatformOutput = ConsoleOutput;
 #endif

@@ -5,13 +5,15 @@
 #include <memory>
 
 #include "Calibration/CalibrationManager.h"
+#include "Calibration/CalibrationResult.h"
 #include "Calibration/CalibrationMethod.h"
 #include "Calibration/SpinningConfig.h"
 #include "Calibration/Strategies/ISpinningConfigurable.h"
 #include "Diagnostics/IDiagnostics.h"
 #include "IADC.h"
-#include "IO/IIO.h"
+#include "UI/IIO.h"
 #include "Storage/ICalibrationStorage.h"
+#include <Platform/TimeUtils.h>
 
 /**
  * @enum WindVaneType
@@ -28,7 +30,7 @@ struct WindVaneConfig {
   WindVaneType type{WindVaneType::REED_SWITCH};
   CalibrationMethod method{CalibrationMethod::SPINNING};
   ICalibrationStorage *storage{};
-  IIOHandler *io{};
+  IUserIO *io{};
   IDiagnostics *diag{};
   SpinningConfig config{};
 };
@@ -38,18 +40,18 @@ class WindVane {
   // All dependencies must be provided via the configuration structure
   explicit WindVane(const WindVaneConfig &cfg);
 
-  float direction();
-  void calibrate();       // New: simple method alias for runCalibration()
-  void runCalibration();  // Advanced
-  uint32_t lastCalibrationTimestamp() const;
+  float direction() const;
+  CalibrationResult calibrate();       // New: simple method alias for runCalibration()
+  CalibrationResult runCalibration();  // Advanced
+  platform::TimeMs lastCalibrationTimestamp() const;
   CalibrationManager::CalibrationStatus calibrationStatus() const;
-  void clearCalibration();
+  void clearCalibration() const;
   void setCalibrationConfig(const SpinningConfig &cfg);
   SpinningConfig getCalibrationConfig() const;
   ICalibrationStorage *storage() const { return _storage; }
 
  private:
-  float getRawDirection();
+  float getRawDirection() const;
   IADC *_adc;
   WindVaneType _type;
   std::unique_ptr<CalibrationManager> _calibrationManager;

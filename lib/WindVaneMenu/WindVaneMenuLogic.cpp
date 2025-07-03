@@ -2,14 +2,15 @@
 
 #include <Platform/IPlatform.h>
 
-WindVaneStatus WindVaneMenuLogic::queryStatus(WindVane* vane, unsigned long lastCalibration,
+WindVaneStatus WindVaneMenuLogic::queryStatus(WindVane* vane, platform::TimeMs lastCalibration,
                                               IPlatform& platform) const {
     WindVaneStatus status;
     if (vane) {
         status.direction = vane->direction();
         status.calibrationStatus = vane->calibrationStatus();
     }
-    status.minutesSinceCalibration = (platform.millis() - lastCalibration) / 60000UL;
+    status.minutesSinceCalibration = platform::toEmbedded(
+        platform.millis() - lastCalibration) / 60000UL;
     return status;
 }
 

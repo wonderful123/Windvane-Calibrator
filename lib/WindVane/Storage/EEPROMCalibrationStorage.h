@@ -1,6 +1,7 @@
 #pragma once
 #include "ICalibrationStorage.h"
 #include "IBlobStorage.h"
+#include <Platform/TimeUtils.h>
 #include <Platform/IPlatform.h>
 #include <cstdint>
 #ifdef ARDUINO
@@ -14,7 +15,7 @@ public:
                              size_t eepromSize = 512);
     void save(const std::vector<ClusterData>& clusters, int version) override;
     bool load(std::vector<ClusterData>& clusters, int &version) override;
-    uint32_t lastTimestamp() const { return _lastTimestamp; }
+    platform::TimeMs lastTimestamp() const { return platform::TimeMs{_lastTimestamp}; }
     void clear() override;
 
     bool writeBlob(const std::vector<unsigned char>& data) override;

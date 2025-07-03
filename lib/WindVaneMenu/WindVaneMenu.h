@@ -1,13 +1,14 @@
 #pragma once
 #include <Diagnostics/IDiagnostics.h>
-#include <IO/IIO.h>
+#include <UI/IIO.h>
 #include <Storage/ICalibrationStorage.h>
 #include <WindVane.h>
 #include "WindVaneMenuLogic.h"
 #include "WindVaneMenuPresenter.h"
+#include "WindVaneMenuDisplayController.h"
 #include "WindVaneMenuTypes.h"
 #include <Platform/IPlatform.h>
-#include <Settings/SettingsManager.h>
+#include <Storage/Settings/SettingsManager.h>
 #include <string>
 #include <functional>
 #include <unordered_map>
@@ -44,6 +45,7 @@ class WindVaneMenu {
 
   WindVaneMenuLogic _logic;
   WindVaneMenuPresenter _presenter;
+  WindVaneMenuDisplayController _display;
   enum class State {
     Main,
     LiveDisplay,
@@ -54,29 +56,19 @@ class WindVaneMenu {
   };
   std::vector<State> _stateStack;
   std::unordered_map<char, std::function<void()>> _mainHandlers;
-  unsigned long _lastActivity;
-  unsigned long _lastCalibration;
 
-  std::string _statusMsg;
-  MenuStatusLevel _statusLevel{MenuStatusLevel::Normal};
-  unsigned long _msgExpiry{0};
-
-  void showStatusLine();
-  void showMainMenu();
+  void showMainMenu() const;
   void handleMainInput(char c);
-  void updateLiveDisplay();
-  void clearExpiredMessage();
-  void runCalibration();
+
+  MenuResult runCalibration();
   void handleDisplaySelection();
   void handleCalibrateSelection();
   void handleDiagnosticsSelection();
   void handleSettingsSelectionMenu();
   void handleHelpSelection();
   void handleUnknownSelection();
-  void showHelp();
-  void clearScreen();
-  void setStatusMessage(const char* msg, MenuStatusLevel lvl = MenuStatusLevel::Normal,
-                        unsigned long ms = 3000);
+  void showHelp() const;
+  void clearScreen() const;
   void pushState(State s);
   void popState();
   State currentState() const;

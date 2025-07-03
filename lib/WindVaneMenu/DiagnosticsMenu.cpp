@@ -1,19 +1,19 @@
 #include "DiagnosticsMenu.h"
 #include <Platform/Platform.h>
-#include <IO/IIO.h>
+#include <UI/IIO.h>
 #ifndef ARDUINO
 #include <iostream>
 #include <limits>
 #endif
 
-DiagnosticsMenu::DiagnosticsMenu(WindVane* vane, IIOHandler* io,
+DiagnosticsMenu::DiagnosticsMenu(WindVane* vane, IUserIO* io,
                                  IBufferedDiagnostics* buffered,
                                  IDiagnostics* diag, IOutput* out,
                                  IPlatform& platform)
     : _vane(vane), _io(io), _buffered(buffered), _diag(diag), _out(out),
       _platform(&platform) {}
 
-void DiagnosticsMenu::show(unsigned long lastCalibration) {
+void DiagnosticsMenu::show(platform::TimeMs lastCalibration) const {
 #ifdef ARDUINO
     size_t index = 0;
     bool done = false;
@@ -27,13 +27,13 @@ void DiagnosticsMenu::show(unsigned long lastCalibration) {
 #endif
 }
 
-char DiagnosticsMenu::readCharBlocking() {
+char DiagnosticsMenu::readCharBlocking() const {
     while (!_io->hasInput())
         _io->waitMs(10);
     return _io->readInput();
 }
 
-void DiagnosticsMenu::renderScreen(size_t index, unsigned long lastCalibration) {
+void DiagnosticsMenu::renderScreen(size_t index, platform::TimeMs lastCalibration) const {
 #ifdef ARDUINO
     char buf[32];
     _out->writeln("--- Diagnostics ---");
@@ -45,7 +45,8 @@ void DiagnosticsMenu::renderScreen(size_t index, unsigned long lastCalibration) 
         default: _out->writeln("Not started"); break;
     }
     _out->write("Last calibration: ");
-    snprintf(buf, sizeof(buf), "%lu", (_platform->millis() - lastCalibration)/60000UL);
+    snprintf(buf, sizeof(buf), "%lu",
+             platform::toEmbedded(_platform->millis() - lastCalibration) / 60000UL);
     _out->write(buf);
     _out->writeln(" minutes ago");
     if (_buffered) {
@@ -59,7 +60,7 @@ void DiagnosticsMenu::renderScreen(size_t index, unsigned long lastCalibration) 
 #endif
 }
 
-void DiagnosticsMenu::handleAction(char c, size_t &index, bool &exit) {
+void DiagnosticsMenu::handleAction(char c, size_t &index, bool &exit) const {
     if (c=='N'||c=='n') {
         if (_buffered && index+5<_buffered->history().size()) index+=5;
     } else if (c=='P'||c=='p') {
@@ -70,19 +71,21 @@ void DiagnosticsMenu::handleAction(char c, size_t &index, bool &exit) {
             index=0;
         }
     } else if (c=='T'||c=='t') {
-        selfTest();
+        SelfTestStatus st = selfTest();
+        if (_diag) {
+            if (st == SelfTestStatus::Ok)
+                _diag->info("Self-test OK");
+            else
+                _diag->warn("Self-test failed");
+        }
     } else {
         exit = true;
     }
 }
 
-void DiagnosticsMenu::selfTest() {
+DiagnosticsMenu::SelfTestStatus DiagnosticsMenu::selfTest() const {
     bool ok = true;
     float d = _vane->direction();
     if (d < 0 || d >= 360) ok = false;
-    if (ok) {
-        if (_diag) _diag->info("Self-test OK");
-    } else {
-        if (_diag) _diag->warn("Self-test failed");
-    }
+    return ok ? SelfTestStatus::Ok : SelfTestStatus::Failed;
 }

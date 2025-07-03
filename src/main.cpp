@@ -2,17 +2,16 @@
 #include "Config.h"
 
 #include <Platform/Platform.h>
-#include <Settings/EEPROMSettingsStorage.h>
-#include <Settings/FileSettingsStorage.h>
-#include <Settings/SettingsData.h>
-#include <Settings/SettingsManager.h>
+#include <Storage/Settings/EEPROMSettingsStorage.h>
+#include <Storage/Settings/FileSettingsStorage.h>
+#include <Storage/Settings/SettingsData.h>
+#include <Storage/Settings/SettingsManager.h>
 #include <Storage/EEPROMCalibrationStorage.h>
 #include <Storage/FileCalibrationStorage.h>
 #ifdef ARDUINO
-#include <Hardware/ESP32/ADC.h>
+#include <Drivers/ESP32/ADC.h>
 #else
-// Simple stub ADC for host builds
-class NullADC : public IADC { public: float read() override { return 0.0f; } };
+#include "host/NullADC.h"
 #endif
 
 DeviceConfig deviceCfg = defaultDeviceConfig();
@@ -33,7 +32,7 @@ FileSettingsStorage settingsStorage(deviceCfg.settingsFile);
 
 PlatformIOHandler io;
 PlatformOutput out;
-PlatformDiagnostics diag;
+PlatformDiagnostics diag(&out);
 SettingsData settings;
 SettingsManager settingsMgr(&settingsStorage, &settings, &diag);
 

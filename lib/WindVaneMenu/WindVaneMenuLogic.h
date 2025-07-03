@@ -6,7 +6,7 @@
 
 class WindVaneMenuLogic {
  public:
-  WindVaneStatus queryStatus(WindVane* vane, unsigned long lastCalibration,
+  WindVaneStatus queryStatus(WindVane* vane, platform::TimeMs lastCalibration,
                              IPlatform& platform) const;
   const char* statusText(CalibrationManager::CalibrationStatus st) const;
 };

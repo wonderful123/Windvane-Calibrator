@@ -1,39 +1,40 @@
 #pragma once
 #include "IIO.h"
+#include <Platform/TimeUtils.h>
 #ifdef ARDUINO
 #include <Arduino.h>
 #endif
 
 class SerialIOHandler : public IUserIO {
 public:
-    bool hasInput() override {
+    bool hasInput() const override {
 #ifdef ARDUINO
         return Serial.available();
 #else
         return false;
 #endif
     }
-    char readInput() override {
+    char readInput() const override {
 #ifdef ARDUINO
         return Serial.read();
 #else
         return 0;
 #endif
     }
-    void flushInput() override {
+    void flushInput() const override {
 #ifdef ARDUINO
         while (Serial.available())
             Serial.read();
 #endif
     }
-    void waitMs(int ms) override {
+    void waitMs(platform::TimeMs ms) const override {
 #ifdef ARDUINO
-        delay(ms);
+        delay(platform::toEmbedded(ms));
 #else
         (void)ms;
 #endif
     }
-    bool yesNoPrompt(const char* prompt) override {
+    bool yesNoPrompt(const char* prompt) const override {
 #ifdef ARDUINO
         Serial.println(prompt);
         while (!Serial.available())
@@ -47,7 +48,7 @@ public:
 #endif
     }
 
-    float readFloat() override {
+    float readFloat() const override {
 #ifdef ARDUINO
         while (!Serial.available())
             delay(10);
@@ -59,7 +60,7 @@ public:
 #endif
     }
 
-    int readInt() override {
+    int readInt() const override {
 #ifdef ARDUINO
         while (!Serial.available())
             delay(10);

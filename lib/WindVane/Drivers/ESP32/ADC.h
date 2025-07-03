@@ -8,7 +8,7 @@ public:
 
   int getPin() const { return _pin; }
 
-  float read() override;
+  float read() const override;
 
 private:
   int _pin;

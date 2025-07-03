@@ -2,5 +2,5 @@
 class IADC {
 public:
     virtual ~IADC() = default;
-    virtual float read() = 0;
+    virtual float read() const = 0;
 };

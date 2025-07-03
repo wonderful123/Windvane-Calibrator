@@ -1,18 +1,18 @@
 #pragma once
-#include <IO/IIO.h>
+#include <UI/IIO.h>
 #include <Storage/ICalibrationStorage.h>
 #include <WindVane.h>
-#include <Settings/SettingsManager.h>
+#include <Storage/Settings/SettingsManager.h>
 
 class SettingsMenu {
  public:
   SettingsMenu(WindVane* vane, IUserIO* io, ICalibrationStorage* calibStorage,
                SettingsManager* settingsMgr, IOutput* out);
 
-  void run();
+  void run() const;
 
-  float readFloat();
-  int readInt();
+  float readFloat() const;
+  int readInt() const;
 
  private:
   WindVane* _vane;
