@@ -13,6 +13,12 @@ StorageResult FileCalibrationStorage::save(const std::vector<ClusterData>& clust
     std::ofstream ofs(_path, std::ios::binary);
     if (!ofs)
         return {StorageStatus::IoError, "open"};
+    
+    // Check for overflow before casting to uint16_t
+    if (clusters.size() > UINT16_MAX) {
+        return {StorageStatus::InvalidFormat, "too many clusters"};
+    }
+    
     _lastTimestamp = static_cast<uint32_t>(std::time(nullptr));
     _schemaVersion = version;
     CalibrationStorageHeader hdr{};
@@ -40,6 +46,12 @@ StorageResult FileCalibrationStorage::load(std::vector<ClusterData>& clusters, i
     version = hdr.version;
     _schemaVersion = hdr.version;
     _lastTimestamp = hdr.timestamp;
+    
+    // Validate count to prevent buffer overflow
+    if (hdr.count == 0 || hdr.count > 1024) {  // Reasonable upper limit
+        return {StorageStatus::InvalidFormat, "invalid cluster count"};
+    }
+    
     clusters.resize(hdr.count);
     ifs.read(reinterpret_cast<char*>(clusters.data()), hdr.count * sizeof(ClusterData));
     if (!ifs)

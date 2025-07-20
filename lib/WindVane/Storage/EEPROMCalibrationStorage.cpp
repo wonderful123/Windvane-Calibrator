@@ -14,9 +14,23 @@ StorageResult EEPROMCalibrationStorage::save(const std::vector<ClusterData>& clu
         (void)version;
         return {StorageStatus::IoError, "no eeprom"};
     }
+    
+    // Check for overflow before casting to uint16_t
+    if (clusters.size() > UINT16_MAX) {
+        return {StorageStatus::InvalidFormat, "too many clusters"};
+    }
+    
     int latest = findLatestSlot();
     int slot = latest < 0 ? 0 : (latest + 1) % _slotCount;
     size_t addr = slotAddr(slot);
+    
+    // Validate that we have enough space
+    size_t requiredSpace = sizeof(CalibrationStorageHeader) + 
+                          clusters.size() * sizeof(ClusterData);
+    if (addr + requiredSpace > _eepromSize) {
+        return {StorageStatus::InvalidFormat, "insufficient EEPROM space"};
+    }
+    
     platform_factory::eeprom_begin(_eepromSize);
     _schemaVersion = version;
     CalibrationStorageHeader hdr{};
@@ -94,8 +108,17 @@ StorageResult EEPROMCalibrationStorage::writeBlob(const std::vector<unsigned cha
         (void)data;
         return {StorageStatus::IoError, "no eeprom"};
     }
-    if (data.size() + _startAddress > _eepromSize)
-        return {StorageStatus::InvalidFormat, "size"};
+    
+    // Improved size validation with clearer error message
+    if (_startAddress >= _eepromSize) {
+        return {StorageStatus::InvalidFormat, "start address beyond EEPROM"};
+    }
+    
+    size_t availableSpace = _eepromSize - _startAddress;
+    if (data.size() > availableSpace) {
+        return {StorageStatus::InvalidFormat, "data too large for EEPROM"};
+    }
+    
     platform_factory::eeprom_begin(_eepromSize);
     for (size_t i = 0; i < data.size(); ++i)
         platform_factory::eeprom_write_byte(_startAddress + i, data[i]);

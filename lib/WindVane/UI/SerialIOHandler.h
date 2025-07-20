@@ -26,14 +26,20 @@ public:
     }
 
     float readFloat() const override {
-        while (!Serial.available()) delay(10);
+        // Add timeout to prevent infinite waiting
+        unsigned long startTime = millis();
+        while (!Serial.available() && (millis() - startTime < 30000)) delay(10);
+        if (!Serial.available()) return 0.0f; // Timeout
         float v = Serial.parseFloat();
         Serial.readStringUntil('\n');
         return v;
     }
 
     int readInt() const override {
-        while (!Serial.available()) delay(10);
+        // Add timeout to prevent infinite waiting
+        unsigned long startTime = millis();
+        while (!Serial.available() && (millis() - startTime < 30000)) delay(10);
+        if (!Serial.available()) return 0; // Timeout
         int v = Serial.parseInt();
         Serial.readStringUntil('\n');
         return v;

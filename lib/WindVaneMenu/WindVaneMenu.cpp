@@ -170,14 +170,25 @@ void WindVaneMenu::pushState(State s) {
   _state.stack.push_back(static_cast<PersistedMenuState>(s));
   _settingsMgr.setMenuState(static_cast<PersistedMenuState>(s));
   StorageResult res = _settingsMgr.save();
-  if (!res.ok()) _diag.warn("Failed to persist menu state");
+  if (!res.ok()) {
+    _diag.warn("Failed to persist menu state");
+    // Rollback the state change if save failed
+    if (!_state.stack.empty()) _state.stack.pop_back();
+  }
 }
 
 void WindVaneMenu::popState() {
-  if (!_state.stack.empty()) _state.stack.pop_back();
-  _settingsMgr.setMenuState(static_cast<PersistedMenuState>(currentState()));
-  StorageResult res = _settingsMgr.save();
-  if (!res.ok()) _diag.warn("Failed to persist menu state");
+  if (!_state.stack.empty()) {
+    PersistedMenuState oldState = _state.stack.back();
+    _state.stack.pop_back();
+    _settingsMgr.setMenuState(static_cast<PersistedMenuState>(currentState()));
+    StorageResult res = _settingsMgr.save();
+    if (!res.ok()) {
+      _diag.warn("Failed to persist menu state");
+      // Rollback the state change if save failed
+      _state.stack.push_back(oldState);
+    }
+  }
 }
 
 WindVaneMenu::State WindVaneMenu::currentState() const {
