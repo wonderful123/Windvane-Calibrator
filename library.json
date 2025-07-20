@@ -15,7 +15,7 @@
   ],
   "license": "MIT",
   "frameworks": "arduino",
-  "platforms": ["espressif32", "native"],
+  "platforms": ["espressif32", "native", "atmelavr"],
   "build": {
     "srcDir": "src",
     "includeDir": "include",
@@ -26,8 +26,15 @@
   "dependencies": {},
   "examples": [
     "examples/BasicWindVane",
-    "examples/AdvancedCalibration",
+    "examples/AdvancedCalibration", 
     "examples/CompleteWindVaneSystem",
     "examples/HostSimulation"
-  ]
+  ],
+  "export": {
+    "include": "include",
+    "exclude": [
+      "examples/*/platformio.ini",
+      "examples/*/README.md"
+    ]
+  }
 }
