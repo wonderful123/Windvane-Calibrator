@@ -1,8 +1,8 @@
 {
   "name": "WindVane",
   "version": "1.0.0",
-  "description": "A self-contained library for wind vane calibration and measurement",
-  "keywords": "wind, vane, calibration, sensor, measurement",
+  "description": "Professional Arduino library for wind direction sensors with advanced calibration and interactive menu system",
+  "keywords": "wind, direction, sensor, calibration, menu, arduino, esp32",
   "repository": {
     "type": "git",
     "url": "https://github.com/wonderful123/Windvane-Calibrator.git"

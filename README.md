@@ -1,348 +1,158 @@
 # WindVane Library
 
-A self-contained C++ library for wind vane calibration and measurement with support for multiple platforms and sensor types.
+A professional Arduino library for wind direction sensors with advanced calibration, interactive menu system, and cross-platform support.
 
-## Features
+## 🚀 Features
 
-- **Multi-Platform Support**: Arduino, ESP32, and Host platforms
-- **Multiple Sensor Types**: Reed switch, potentiometer, magnetic, and optical encoders
-- **Advanced Calibration**: Spinning, static, automatic, and manual calibration methods
-- **Flexible Storage**: EEPROM, Flash, SD card, and file system storage backends
-- **Interactive Menu System**: Complete UI with live display, diagnostics, and settings
-- **SOLID Principles**: Clean architecture with dependency injection and interfaces
-- **Comprehensive Testing**: Unit tests and integration tests
-- **Google C++ Style Guide**: Consistent code formatting and naming conventions
+### **Core Functionality**
+- **Wind Direction Sensing**: Accurate 0-359° wind direction readings
+- **Advanced Calibration**: Multiple calibration methods (spinning, static, automatic)
+- **Interactive Menu System**: User-friendly interface with real-time display
+- **Cross-Platform Support**: Works on Arduino, ESP32, and desktop platforms
+- **Flexible Storage**: EEPROM and file-based storage options
 
-## Quick Start
+### **Professional Architecture**
+- **SOLID Principles**: Clean, maintainable code architecture
+- **Google C++ Style Guide**: Consistent naming and formatting
+- **Dependency Injection**: Loose coupling and testability
+- **Platform Abstraction**: Hardware-independent design
+- **Comprehensive Diagnostics**: Built-in logging and error handling
 
-### Arduino Example
+### **Easy to Use**
+- **Builder Pattern**: Fluent interface for easy setup
+- **Self-Contained**: No external dependencies
+- **Arduino Library Manager Ready**: Professional library structure
+- **Comprehensive Examples**: Multiple example sketches included
 
-```cpp
-#include <WindVane.h>
+## 📦 Installation
 
-// Create WindVane instance
-WindVane::WindVaneBuilder builder = WindVane::WindVaneBuilder::arduino();
-auto windVane = builder.setVaneType(WindVane::VaneType::REED_SWITCH)
-                       .setCalibrationMethod(WindVane::CalibrationMethod::SPINNING)
-                       .build();
-
-void setup() {
-  Serial.begin(115200);
-  
-  if (windVane->begin()) {
-    Serial.println("WindVane initialized successfully");
-    
-    // Load existing calibration
-    if (!windVane->loadCalibration()) {
-      // Start calibration if none exists
-      windVane->startCalibration();
-    }
-  }
-}
-
-void loop() {
-  windVane->update();
-  
-  if (windVane->isCalibrated()) {
-    WindVane::WindDirection direction = windVane->getDirection();
-    Serial.print("Wind Direction: ");
-    Serial.print(direction.getDegrees());
-    Serial.println("°");
-  }
-  
-  delay(1000);
-}
-```
-
-### Complete System Example
-
-For a full-featured system with menu, diagnostics, and all components:
-
-```cpp
-#include <WindVane.h>
-
-// See examples/CompleteWindVaneSystem/CompleteWindVaneSystem.ino
-// for a complete example with all features including:
-// - Interactive menu system
-// - Real-time wind direction display
-// - Multiple calibration methods
-// - Diagnostics and logging
-// - Settings management
-// - Platform abstraction
-```
-
-## Installation
-
-### Arduino Library Manager
-
-1. Open Arduino IDE
-2. Go to Tools > Manage Libraries
-3. Search for "WindVane"
-4. Click Install
-
-### Manual Installation
-
-1. Download the library
+### Arduino IDE
+1. Download this repository
 2. Extract to your Arduino libraries folder
 3. Restart Arduino IDE
+4. Open `File > Examples > WindVane`
 
 ### PlatformIO
-
-Add to your `platformio.ini`:
-
 ```ini
 lib_deps = 
-    WindVane
+    https://github.com/wonderful123/Windvane-Calibrator.git
 ```
 
-## Configuration
-
-### Wind Vane Types
-
-- `VaneType::REED_SWITCH`: Reed switch based wind vane
-- `VaneType::POTENTIOMETER`: Potentiometer based wind vane
-- `VaneType::MAGNETIC`: Magnetic sensor based wind vane
-- `VaneType::OPTICAL`: Optical encoder based wind vane
-
-### Calibration Methods
-
-- `CalibrationMethod::SPINNING`: Rotate wind vane 360° continuously
-- `CalibrationMethod::STATIC`: Point to known directions
-- `CalibrationMethod::AUTOMATIC`: Automatic calibration
-- `CalibrationMethod::MANUAL`: Manual calibration with user input
-
-### Storage Types
-
-- `StorageType::EEPROM`: EEPROM storage (Arduino)
-- `StorageType::FLASH`: Flash memory storage (ESP32)
-- `StorageType::SD_CARD`: SD card storage
-- `StorageType::FILE_SYSTEM`: File system storage (Host)
-
-## API Reference
-
-### Main Classes
-
-#### WindVane
-
-The main class for wind vane operations.
+## 🔧 Quick Start
 
 ```cpp
-class WindVane {
-public:
-    // Constructor with dependency injection
-    WindVane(const WindVaneConfig& config,
-              std::unique_ptr<IADC> adc,
-              std::unique_ptr<ICalibrationStorage> storage,
-              std::unique_ptr<IUserIO> io,
-              std::unique_ptr<IDiagnostics> diagnostics);
-    
-    // Core methods
-    bool begin();
-    void end();
-    void update();
-    
-    // Measurement methods
-    WindDirection getDirection() const;
-    WindMeasurement getMeasurement() const;
-    uint16_t getRawValue() const;
-    uint16_t getVoltage() const;
-    
-    // Calibration methods
-    bool isCalibrated() const;
-    bool startCalibration(CalibrationMethod method = CalibrationMethod::SPINNING);
-    bool stopCalibration();
-    bool isCalibrating() const;
-    uint8_t getCalibrationProgress() const;
-    
-    // Storage methods
-    bool loadCalibration();
-    bool saveCalibration();
-    bool clearCalibration();
-    CalibrationData getCalibrationData() const;
-};
+#include <WindVane.h>
+
+// Create wind vane with builder pattern
+auto windVane = WindVane::Builder()
+    .withADC(adc)
+    .withStorage(storage)
+    .withUserIO(userIO)
+    .withDiagnostics(diagnostics)
+    .build();
+
+// Get wind direction
+float direction = windVane.GetDirection();
+
+// Start calibration
+auto result = windVane.StartCalibration();
 ```
 
-#### WindVaneMenu
+## 📚 Examples
 
-Interactive menu system for user interface.
+### **BasicWindVane.ino**
+Simple wind direction reading with basic calibration.
 
-```cpp
-class WindVaneMenu {
-public:
-    WindVaneMenu(const WindVaneMenuConfig& config);
-    
-    void begin();
-    void update();
-    
-    // Menu features:
-    // - Live wind direction display
-    // - Interactive calibration
-    // - Diagnostics and settings
-    // - Help and documentation
-};
+### **AdvancedCalibration.ino**
+Advanced calibration with interactive menu system and multiple methods.
+
+### **CompleteWindVaneSystem.ino**
+Full system with menu, diagnostics, storage, and all features.
+
+### **HostSimulation.ino**
+Desktop simulation for testing and development.
+
+## 🏗️ Architecture
+
+```
+WindVane/
+├── Core/           # Main WindVane class
+├── Calibration/    # Calibration system
+├── Storage/        # Data persistence
+├── UI/            # User interface
+├── Diagnostics/    # Logging and debugging
+├── Platform/      # Platform abstraction
+├── Drivers/       # Hardware drivers
+├── Menu/          # Interactive menu system
+└── Interfaces/    # Abstract interfaces
 ```
 
-#### WindVaneBuilder
+## 🎯 Key Components
 
-Builder pattern for creating WindVane instances.
+### **WindVane Core**
+- Main sensor class with dependency injection
+- Builder pattern for easy configuration
+- Multiple calibration strategies
 
-```cpp
-class WindVaneBuilder {
-public:
-    // Configuration methods
-    WindVaneBuilder& setVaneType(VaneType type);
-    WindVaneBuilder& setCalibrationMethod(CalibrationMethod method);
-    WindVaneBuilder& setStorageType(StorageType type);
-    WindVaneBuilder& setPlatformType(PlatformType type);
-    WindVaneBuilder& setADCConfig(const ADCConfig& config);
-    WindVaneBuilder& setStorageConfig(const StorageConfig& config);
-    
-    // Factory methods
-    static WindVaneBuilder arduino();
-    static WindVaneBuilder esp32();
-    static WindVaneBuilder host();
-    
-    // Build method
-    std::unique_ptr<WindVane> build();
-};
-```
+### **Interactive Menu System**
+- Real-time wind direction display
+- Interactive calibration process
+- System diagnostics and settings
+- Help and documentation
 
-### Data Types
+### **Advanced Calibration**
+- Spinning calibration method
+- Static calibration method
+- Automatic calibration detection
+- Data clustering and validation
 
-#### WindDirection
+### **Flexible Storage**
+- EEPROM storage for Arduino
+- File storage for desktop
+- Settings management
+- Data validation and recovery
 
-```cpp
-struct WindDirection {
-    uint16_t degrees;
-    
-    uint16_t getDegrees() const;
-    double getRadians() const;
-};
-```
+### **Platform Support**
+- Arduino (Uno, Mega, etc.)
+- ESP32 (with ADC drivers)
+- Desktop (for simulation)
 
-#### WindSpeed
+## 🔍 Diagnostics
 
-```cpp
-struct WindSpeed {
-    float mps;
-    
-    float getMPS() const;
-    float getKPH() const;
-    float getMPH() const;
-    float getKnots() const;
-};
-```
+Built-in diagnostics system provides:
+- Real-time sensor readings
+- Calibration status
+- Error logging
+- Performance metrics
+- System health monitoring
 
-#### WindMeasurement
+## 📖 Documentation
 
-```cpp
-struct WindMeasurement {
-    WindDirection direction;
-    WindSpeed speed;
-    TimeMs timestamp;
-    bool isValid;
-};
-```
+- **Examples**: Comprehensive example sketches
+- **API Reference**: Complete class documentation
+- **Architecture Guide**: Design patterns and principles
+- **Platform Guide**: Platform-specific setup
 
-## Examples
-
-### Basic Wind Vane
-
-Simple example for reading wind direction.
-
-```cpp
-// examples/BasicWindVane/BasicWindVane.ino
-```
-
-### Advanced Calibration
-
-Advanced example with multiple calibration methods and menu system.
-
-```cpp
-// examples/AdvancedCalibration/AdvancedCalibration.ino
-```
-
-### Complete Wind Vane System
-
-Full-featured example with all components including menu system, diagnostics, and settings.
-
-```cpp
-// examples/CompleteWindVaneSystem/CompleteWindVaneSystem.ino
-```
-
-### Host Simulation
-
-Desktop simulation with file-based storage.
-
-```cpp
-// examples/HostSimulation/HostSimulation.cpp
-```
-
-## Platform Support
-
-### Arduino
-
-- **ADC**: Built-in ADC
-- **Storage**: EEPROM
-- **UI**: Serial communication
-- **Time**: `millis()` function
-- **Menu**: Interactive serial menu
-
-### ESP32
-
-- **ADC**: ESP32 ADC with high resolution
-- **Storage**: Flash memory or SD card
-- **UI**: Serial communication
-- **Time**: `millis()` function
-- **Menu**: Interactive serial menu
-
-### Host (Desktop)
-
-- **ADC**: Simulated ADC values
-- **Storage**: File system
-- **UI**: Console I/O
-- **Time**: `std::chrono`
-- **Menu**: Console-based menu
-
-## Architecture
-
-The library follows SOLID principles with clean separation of concerns:
-
-- **Interfaces**: Abstract interfaces for all dependencies
-- **Dependency Injection**: All dependencies injected through constructor
-- **Builder Pattern**: Fluent interface for configuration
-- **Factory Pattern**: Platform-specific implementations
-- **Strategy Pattern**: Different calibration and storage strategies
-- **Menu System**: Interactive UI with state management
-
-## Menu System Features
-
-The WindVane library includes a comprehensive menu system:
-
-- **Live Display**: Real-time wind direction with status
-- **Interactive Calibration**: Guided calibration process
-- **Diagnostics**: System diagnostics and logging
-- **Settings**: Configuration and maintenance
-- **Help**: Documentation and assistance
-
-## Contributing
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes
-4. Add tests
+3. Follow Google C++ Style Guide
+4. Add tests for new features
 5. Submit a pull request
 
-## License
+## 📄 License
 
-MIT License - see LICENSE file for details.
+This library is licensed under the MIT License.
 
-## Version History
+## 🆘 Support
 
-- **1.0.0**: Initial release with self-contained library structure
-- Support for Arduino, ESP32, and Host platforms
-- Multiple calibration methods
-- Flexible storage backends
-- Interactive menu system
-- Comprehensive testing framework
-- Complete diagnostics and logging
+- **Issues**: Report bugs and feature requests
+- **Examples**: Check the examples folder
+- **Documentation**: See inline documentation
+- **Community**: Join Arduino community discussions
+
+---
+
+**Professional Wind Direction Sensing Library**  
+*Built with SOLID principles and Google C++ Style Guide*
