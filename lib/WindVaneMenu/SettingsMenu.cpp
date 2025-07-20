@@ -19,10 +19,14 @@ void SettingsMenu::run() const {
   _out.writeln("Choose option:");
   int opt = readInt();
   if (opt == 1) {
-    _out.writeln("Enter new buffer size:");
+    _out.writeln("Enter new buffer size (1-100):");
     int newBuf = readInt();
-    _settingsMgr.setSpinBufferSize(newBuf);
-    _out.writeln("Buffer size updated.");
+    if (newBuf < 1 || newBuf > 100) {
+      _out.writeln("Error: Buffer size must be between 1 and 100.");
+    } else {
+      _settingsMgr.setSpinBufferSize(newBuf);
+      _out.writeln("Buffer size updated.");
+    }
   } else if (opt == 2) {
     StorageResult res = _settingsMgr.save();
     if (res.ok()) {

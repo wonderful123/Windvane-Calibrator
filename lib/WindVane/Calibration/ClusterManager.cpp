@@ -96,8 +96,13 @@ float ClusterManager::interpolate(float reading) const {
     size_t n = _clusters.size();
     // handle wrap-around before first cluster
     if (reading < _clusters.front().mean) {
-        float prev = _clusters.back().mean - 1.0f;
-        float ratio = (reading - prev) / (_clusters.front().mean - prev);
+        // Handle wrap-around case: reading is between last cluster (wrapped) and first cluster
+        float prev = _clusters.back().mean;
+        float curr = _clusters.front().mean;
+        // Calculate distance considering wrap-around (reading + 1.0 to handle the wrap)
+        float total_gap = (1.0f - prev) + curr;
+        float reading_gap = (1.0f - prev) + reading;
+        float ratio = reading_gap / total_gap;
         float angle = (n - 1 + ratio) * 360.0f / n;
         return normalize360(angle);
     }

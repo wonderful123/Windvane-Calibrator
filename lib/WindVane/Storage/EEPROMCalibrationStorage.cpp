@@ -14,6 +14,12 @@ StorageResult EEPROMCalibrationStorage::save(const std::vector<ClusterData>& clu
         (void)version;
         return {StorageStatus::IoError, "no eeprom"};
     }
+    
+    // Check for overflow before casting to uint16_t
+    if (clusters.size() > UINT16_MAX) {
+        return {StorageStatus::InvalidFormat, "too many clusters"};
+    }
+    
     int latest = findLatestSlot();
     int slot = latest < 0 ? 0 : (latest + 1) % _slotCount;
     size_t addr = slotAddr(slot);
