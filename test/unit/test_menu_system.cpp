@@ -3,8 +3,8 @@
 #include "WindVane/Menu/WindVaneMenu.h"
 #include "WindVane/Menu/MenuController.h"
 #include "WindVane/Menu/MenuPresenter.h"
-#include "WindVane/Interfaces/IUserIO.h"
-#include "WindVane/Interfaces/IDiagnostics.h"
+#include "WindVane/UI/IIO.h"
+#include "WindVane/Diagnostics/IDiagnostics.h"
 
 using namespace testing;
 
@@ -27,11 +27,12 @@ public:
 
 class MockWindVane {
 public:
-    MOCK_METHOD(float, GetDirection, (), (const));
-    MOCK_METHOD(float, GetRawReading, (), (const));
-    MOCK_METHOD(bool, IsCalibrated, (), (const));
-    MOCK_METHOD(WindVane::CalibrationResult, StartCalibration, (), ());
-    MOCK_METHOD(bool, ClearCalibration, (), ());
+    MOCK_METHOD(float, getDirection, (), (const));
+    MOCK_METHOD(float, getRawDirection, (), (const));
+    MOCK_METHOD(WindVane::CalibrationManager::CalibrationStatus, getCalibrationStatus, (), (const));
+    MOCK_METHOD(WindVane::CalibrationResult, runCalibration, (), ());
+    MOCK_METHOD(WindVane::CalibrationResult, calibrate, (), ());
+    MOCK_METHOD(WindVane::StorageResult, clearCalibration, (), (const));
 };
 
 class MenuSystemTest : public Test {
@@ -67,7 +68,7 @@ TEST_F(MenuSystemTest, ShowMainMenu_DisplaysMenuOptions) {
 TEST_F(MenuSystemTest, HandleInput_ValidOption_ExecutesAction) {
     EXPECT_CALL(*mockUserIO, ReadChar())
         .WillOnce(Return('1')); // Direction display option
-    EXPECT_CALL(*mockWindVane, GetDirection())
+    EXPECT_CALL(*mockWindVane, getDirection())
         .WillOnce(Return(180.0f));
     EXPECT_CALL(*mockUserIO, Print(_))
         .Times(AtLeast(1));
@@ -78,7 +79,7 @@ TEST_F(MenuSystemTest, HandleInput_ValidOption_ExecutesAction) {
 TEST_F(MenuSystemTest, HandleInput_CalibrationOption_StartsCalibration) {
     EXPECT_CALL(*mockUserIO, ReadChar())
         .WillOnce(Return('2')); // Calibration option
-    EXPECT_CALL(*mockWindVane, StartCalibration())
+    EXPECT_CALL(*mockWindVane, runCalibration())
         .WillOnce(Return(WindVane::CalibrationResult{true, "Success"}));
     EXPECT_CALL(*mockUserIO, Println(_))
         .Times(AtLeast(1));
@@ -123,10 +124,10 @@ TEST_F(MenuSystemTest, HandleInput_QuitOption_ExitsMenu) {
 }
 
 TEST_F(MenuSystemTest, ShowDirectionDisplay_ShowsCurrentDirection) {
-    EXPECT_CALL(*mockWindVane, GetDirection())
+    EXPECT_CALL(*mockWindVane, getDirection())
         .WillOnce(Return(270.0f));
-    EXPECT_CALL(*mockWindVane, IsCalibrated())
-        .WillOnce(Return(true));
+    EXPECT_CALL(*mockWindVane, getCalibrationStatus())
+        .WillOnce(Return(WindVane::CalibrationManager::CalibrationStatus::CALIBRATED));
     EXPECT_CALL(*mockUserIO, Print(_))
         .Times(AtLeast(1));
 
@@ -134,8 +135,8 @@ TEST_F(MenuSystemTest, ShowDirectionDisplay_ShowsCurrentDirection) {
 }
 
 TEST_F(MenuSystemTest, ShowDirectionDisplay_NotCalibrated_ShowsWarning) {
-    EXPECT_CALL(*mockWindVane, IsCalibrated())
-        .WillOnce(Return(false));
+    EXPECT_CALL(*mockWindVane, getCalibrationStatus())
+        .WillOnce(Return(WindVane::CalibrationManager::CalibrationStatus::NOT_CALIBRATED));
     EXPECT_CALL(*mockUserIO, Println(_))
         .Times(AtLeast(1));
 
@@ -143,7 +144,7 @@ TEST_F(MenuSystemTest, ShowDirectionDisplay_NotCalibrated_ShowsWarning) {
 }
 
 TEST_F(MenuSystemTest, ShowCalibrationMenu_StartsCalibration) {
-    EXPECT_CALL(*mockWindVane, StartCalibration())
+    EXPECT_CALL(*mockWindVane, runCalibration())
         .WillOnce(Return(WindVane::CalibrationResult{true, "Calibration started"}));
     EXPECT_CALL(*mockUserIO, Println(_))
         .Times(AtLeast(1));
@@ -152,7 +153,7 @@ TEST_F(MenuSystemTest, ShowCalibrationMenu_StartsCalibration) {
 }
 
 TEST_F(MenuSystemTest, ShowDiagnosticsMenu_ShowsSystemInfo) {
-    EXPECT_CALL(*mockWindVane, GetRawReading())
+    EXPECT_CALL(*mockWindVane, getRawDirection())
         .WillOnce(Return(0.75f));
     EXPECT_CALL(*mockUserIO, Print(_))
         .Times(AtLeast(1));
@@ -180,11 +181,11 @@ TEST_F(MenuSystemTest, RunMenuLoop_HandlesMultipleInputs) {
         .WillOnce(Return('1'))  // Direction display
         .WillOnce(Return('2'))  // Calibration
         .WillOnce(Return('q')); // Quit
-    EXPECT_CALL(*mockWindVane, GetDirection())
+    EXPECT_CALL(*mockWindVane, getDirection())
         .WillOnce(Return(90.0f));
-    EXPECT_CALL(*mockWindVane, IsCalibrated())
-        .WillOnce(Return(true));
-    EXPECT_CALL(*mockWindVane, StartCalibration())
+    EXPECT_CALL(*mockWindVane, getCalibrationStatus())
+        .WillOnce(Return(WindVane::CalibrationManager::CalibrationStatus::CALIBRATED));
+    EXPECT_CALL(*mockWindVane, runCalibration())
         .WillOnce(Return(WindVane::CalibrationResult{true, "Success"}));
     EXPECT_CALL(*mockUserIO, Print(_))
         .Times(AtLeast(1));
@@ -195,6 +196,26 @@ TEST_F(MenuSystemTest, RunMenuLoop_HandlesMultipleInputs) {
     for (int i = 0; i < 3; ++i) {
         menu->HandleInput();
     }
+}
+
+TEST_F(MenuSystemTest, ShowCalibrationStatus_ShowsCurrentStatus) {
+    EXPECT_CALL(*mockWindVane, getCalibrationStatus())
+        .WillOnce(Return(WindVane::CalibrationManager::CalibrationStatus::IN_PROGRESS));
+    EXPECT_CALL(*mockUserIO, Print(_))
+        .Times(AtLeast(1));
+
+    menu->ShowCalibrationStatus();
+}
+
+TEST_F(MenuSystemTest, ShowClearCalibration_ConfirmsAndClears) {
+    EXPECT_CALL(*mockUserIO, ReadChar())
+        .WillOnce(Return('y')); // Confirm clear
+    EXPECT_CALL(*mockWindVane, clearCalibration())
+        .WillOnce(Return(WindVane::StorageResult{true, "Cleared"}));
+    EXPECT_CALL(*mockUserIO, Println(_))
+        .Times(AtLeast(1));
+
+    menu->ShowClearCalibration();
 }
 
 int main(int argc, char** argv) {

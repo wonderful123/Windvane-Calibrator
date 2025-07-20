@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
-#include "WindVane.h"
-#include "WindVane/Core/WindVane.h"
+#include <chrono>
+#include "WindVane/WindVane.h"
 #include "WindVane/Menu/WindVaneMenu.h"
 #include "WindVane/Calibration/CalibrationManager.h"
 #include "WindVane/Storage/EEPROMCalibrationStorage.h"
@@ -31,11 +31,14 @@ protected:
         settingsManager = std::make_shared<WindVane::SettingsManager>();
 
         // Create WindVane with real components
-        WindVane::WindVane::Config config{
+        WindVane::WindVaneConfig config{
             *adc,
+            WindVane::WindVaneType::REED_SWITCH,
+            WindVane::CalibrationMethod::SPINNING,
             storage.get(),
             *userIO,
-            *diagnostics
+            *diagnostics,
+            WindVane::CalibrationConfig{}
         };
 
         windVane = std::make_unique<WindVane::WindVane>(config);
@@ -45,7 +48,9 @@ protected:
 
     void TearDown() override {
         // Clean up any test data
-        storage->ClearCalibration();
+        if (storage) {
+            storage->ClearCalibration();
+        }
     }
 };
 
@@ -62,22 +67,22 @@ TEST_F(CompleteSystemTest, SystemInitialization_AllComponents_WorkTogether) {
 
 TEST_F(CompleteSystemTest, WindVane_GetDirection_ReturnsValidValue) {
     // Test that wind vane can get direction readings
-    float direction = windVane->GetDirection();
+    float direction = windVane->getDirection();
     EXPECT_GE(direction, 0.0f);
     EXPECT_LE(direction, 360.0f);
 }
 
-TEST_F(CompleteSystemTest, WindVane_GetRawReading_ReturnsValidValue) {
+TEST_F(CompleteSystemTest, WindVane_GetRawDirection_ReturnsValidValue) {
     // Test that wind vane can get raw readings
-    float rawValue = windVane->GetRawReading();
+    float rawValue = windVane->getRawDirection();
     EXPECT_GE(rawValue, 0.0f);
     EXPECT_LE(rawValue, 1.0f);
 }
 
-TEST_F(CompleteSystemTest, WindVane_IsCalibrated_InitiallyFalse) {
+TEST_F(CompleteSystemTest, WindVane_GetCalibrationStatus_InitiallyNotCalibrated) {
     // Test that wind vane is not calibrated initially
-    bool isCalibrated = windVane->IsCalibrated();
-    EXPECT_FALSE(isCalibrated);
+    auto status = windVane->getCalibrationStatus();
+    EXPECT_EQ(status, WindVane::CalibrationManager::CalibrationStatus::NOT_CALIBRATED);
 }
 
 TEST_F(CompleteSystemTest, Storage_SaveAndLoadCalibration_WorksEndToEnd) {
@@ -161,43 +166,49 @@ TEST_F(CompleteSystemTest, UserIO_InputOutput_WorksWithRealComponents) {
 
 TEST_F(CompleteSystemTest, ADC_Readings_WorksWithRealHardware) {
     // Test that ADC can read values (if hardware available)
-    EXPECT_TRUE(adc->IsAvailable());
+    EXPECT_TRUE(adc->isInitialized());
     
-    float normalizedValue = adc->ReadNormalized();
+    float normalizedValue = adc->readNormalized();
     EXPECT_GE(normalizedValue, 0.0f);
     EXPECT_LE(normalizedValue, 1.0f);
     
-    int rawValue = adc->ReadRaw();
+    uint16_t rawValue = adc->read();
     EXPECT_GE(rawValue, 0);
     
-    int resolution = adc->GetResolutionBits();
+    uint8_t resolution = adc->getResolution();
     EXPECT_GT(resolution, 0);
 }
 
-TEST_F(CompleteSystemTest, Calibration_StartCalibration_WorksWithRealComponents) {
+TEST_F(CompleteSystemTest, Calibration_RunCalibration_WorksWithRealComponents) {
     // Test that calibration can be started with real components
-    auto result = windVane->StartCalibration();
+    auto result = windVane->runCalibration();
+    EXPECT_TRUE(result.success);
+}
+
+TEST_F(CompleteSystemTest, Calibration_SimpleCalibrate_WorksWithRealComponents) {
+    // Test that simple calibration works with real components
+    auto result = windVane->calibrate();
     EXPECT_TRUE(result.success);
 }
 
 TEST_F(CompleteSystemTest, System_ErrorHandling_WorksGracefully) {
     // Test that system handles errors gracefully
     // Try to get direction without calibration (should work)
-    float direction = windVane->GetDirection();
+    float direction = windVane->getDirection();
     EXPECT_GE(direction, 0.0f);
     
     // Try to clear calibration when none exists (should work)
-    bool clearResult = windVane->ClearCalibration();
-    EXPECT_TRUE(clearResult);
+    auto clearResult = windVane->clearCalibration();
+    EXPECT_TRUE(clearResult.success);
 }
 
 TEST_F(CompleteSystemTest, System_Performance_ReasonableResponseTimes) {
     // Test that system responds within reasonable time
     auto start = std::chrono::high_resolution_clock::now();
     
-    float direction = windVane->GetDirection();
-    float rawValue = windVane->GetRawReading();
-    bool isCalibrated = windVane->IsCalibrated();
+    float direction = windVane->getDirection();
+    float rawValue = windVane->getRawDirection();
+    auto status = windVane->getCalibrationStatus();
     
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -210,7 +221,7 @@ TEST_F(CompleteSystemTest, System_Performance_ReasonableResponseTimes) {
     EXPECT_LE(direction, 360.0f);
     EXPECT_GE(rawValue, 0.0f);
     EXPECT_LE(rawValue, 1.0f);
-    EXPECT_FALSE(isCalibrated); // Should be false initially
+    EXPECT_EQ(status, WindVane::CalibrationManager::CalibrationStatus::NOT_CALIBRATED); // Should be not calibrated initially
 }
 
 TEST_F(CompleteSystemTest, System_MemoryUsage_ReasonableFootprint) {
@@ -221,11 +232,14 @@ TEST_F(CompleteSystemTest, System_MemoryUsage_ReasonableFootprint) {
     std::vector<std::unique_ptr<WindVane::WindVane>> windVanes;
     
     for (int i = 0; i < 5; ++i) {
-        WindVane::WindVane::Config config{
+        WindVane::WindVaneConfig config{
             *adc,
+            WindVane::WindVaneType::REED_SWITCH,
+            WindVane::CalibrationMethod::SPINNING,
             storage.get(),
             *userIO,
-            *diagnostics
+            *diagnostics,
+            WindVane::CalibrationConfig{}
         };
         
         windVanes.push_back(std::make_unique<WindVane::WindVane>(config));
@@ -233,10 +247,30 @@ TEST_F(CompleteSystemTest, System_MemoryUsage_ReasonableFootprint) {
     
     // All instances should work
     for (auto& wv : windVanes) {
-        float direction = wv->GetDirection();
+        float direction = wv->getDirection();
         EXPECT_GE(direction, 0.0f);
         EXPECT_LE(direction, 360.0f);
     }
+}
+
+TEST_F(CompleteSystemTest, System_Configuration_WorksCorrectly) {
+    // Test configuration management
+    auto config = windVane->getCalibrationConfig();
+    EXPECT_NE(&config, nullptr);
+    
+    // Test setting new configuration
+    WindVane::CalibrationConfig newConfig;
+    newConfig.method = WindVane::CalibrationMethod::STATIC;
+    windVane->setCalibrationConfig(newConfig);
+    
+    auto updatedConfig = windVane->getCalibrationConfig();
+    EXPECT_EQ(updatedConfig.method, WindVane::CalibrationMethod::STATIC);
+}
+
+TEST_F(CompleteSystemTest, System_StorageAccess_WorksCorrectly) {
+    // Test storage access
+    auto storagePtr = windVane->getStorage();
+    EXPECT_EQ(storagePtr, storage.get());
 }
 
 int main(int argc, char** argv) {

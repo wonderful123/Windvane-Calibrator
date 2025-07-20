@@ -2,8 +2,8 @@
 #include <gmock/gmock.h>
 #include "WindVane/Calibration/CalibrationManager.h"
 #include "WindVane/Calibration/ICalibrationStrategy.h"
-#include "WindVane/Interfaces/IUserIO.h"
-#include "WindVane/Interfaces/IDiagnostics.h"
+#include "WindVane/UI/IIO.h"
+#include "WindVane/Diagnostics/IDiagnostics.h"
 
 using namespace testing;
 
@@ -176,6 +176,37 @@ TEST_F(CalibrationManagerTest, GetCalibrationResult_CompletedCalibration_Returns
     auto result = calibrationManager->GetCalibrationResult();
     EXPECT_TRUE(result.success);
     EXPECT_EQ(result.message, expectedResult.message);
+}
+
+TEST_F(CalibrationManagerTest, GetStatus_NoCalibration_ReturnsNotCalibrated) {
+    auto status = calibrationManager->GetStatus();
+    EXPECT_EQ(status, WindVane::CalibrationManager::CalibrationStatus::NOT_CALIBRATED);
+}
+
+TEST_F(CalibrationManagerTest, GetStatus_CalibrationInProgress_ReturnsInProgress) {
+    EXPECT_CALL(*mockStrategy, Start())
+        .WillOnce(Return(true));
+    calibrationManager->StartCalibration(mockStrategy);
+
+    auto status = calibrationManager->GetStatus();
+    EXPECT_EQ(status, WindVane::CalibrationManager::CalibrationStatus::IN_PROGRESS);
+}
+
+TEST_F(CalibrationManagerTest, GetStatus_CalibrationComplete_ReturnsCalibrated) {
+    EXPECT_CALL(*mockStrategy, Start())
+        .WillOnce(Return(true));
+    EXPECT_CALL(*mockStrategy, Update())
+        .WillOnce(Return(true));
+    EXPECT_CALL(*mockStrategy, IsComplete())
+        .WillOnce(Return(true));
+    EXPECT_CALL(*mockStrategy, GetResult())
+        .WillOnce(Return(WindVane::CalibrationResult{true, "Success"}));
+
+    calibrationManager->StartCalibration(mockStrategy);
+    calibrationManager->Update();
+
+    auto status = calibrationManager->GetStatus();
+    EXPECT_EQ(status, WindVane::CalibrationManager::CalibrationStatus::CALIBRATED);
 }
 
 int main(int argc, char** argv) {

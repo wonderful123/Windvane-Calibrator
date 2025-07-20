@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#include <fstream>
 #include "WindVane/Storage/ICalibrationStorage.h"
 #include "WindVane/Storage/EEPROMCalibrationStorage.h"
 #include "WindVane/Storage/FileCalibrationStorage.h"
@@ -21,6 +22,13 @@ protected:
         testSettingsData.version = 1;
         testSettingsData.updateInterval = 1000;
         testSettingsData.logLevel = WindVane::LogLevel::INFO;
+    }
+
+    void TearDown() override {
+        // Clean up any test files
+        std::remove("test_calibration.dat");
+        std::remove("test_settings.dat");
+        std::remove("corrupted_file.dat");
     }
 
     WindVane::CalibrationData testCalibrationData;
@@ -91,9 +99,6 @@ TEST_F(StorageSystemTest, FileCalibrationStorage_SaveAndLoad_WorksCorrectly) {
     EXPECT_NEAR(loadedData.offset, testCalibrationData.offset, 0.01f);
     EXPECT_NEAR(loadedData.scale, testCalibrationData.scale, 0.01f);
     EXPECT_EQ(loadedData.timestamp, testCalibrationData.timestamp);
-    
-    // Clean up test file
-    std::remove("test_calibration.dat");
 }
 
 TEST_F(StorageSystemTest, FileCalibrationStorage_HasCalibration_ReturnsCorrect) {
@@ -107,9 +112,6 @@ TEST_F(StorageSystemTest, FileCalibrationStorage_HasCalibration_ReturnsCorrect) 
     
     // Now has calibration
     EXPECT_TRUE(storage.HasCalibration());
-    
-    // Clean up test file
-    std::remove("test_calibration.dat");
 }
 
 TEST_F(StorageSystemTest, FileCalibrationStorage_ClearCalibration_WorksCorrectly) {
@@ -125,9 +127,6 @@ TEST_F(StorageSystemTest, FileCalibrationStorage_ClearCalibration_WorksCorrectly
     
     // Verify cleared
     EXPECT_FALSE(storage.HasCalibration());
-    
-    // Clean up test file
-    std::remove("test_calibration.dat");
 }
 
 TEST_F(StorageSystemTest, EEPROMSettingsStorage_SaveAndLoad_WorksCorrectly) {
@@ -164,9 +163,6 @@ TEST_F(StorageSystemTest, FileSettingsStorage_SaveAndLoad_WorksCorrectly) {
     EXPECT_EQ(loadedData.version, testSettingsData.version);
     EXPECT_EQ(loadedData.updateInterval, testSettingsData.updateInterval);
     EXPECT_EQ(loadedData.logLevel, testSettingsData.logLevel);
-    
-    // Clean up test file
-    std::remove("test_settings.dat");
 }
 
 TEST_F(StorageSystemTest, SettingsManager_LoadAndSaveSettings_WorksCorrectly) {
@@ -242,9 +238,29 @@ TEST_F(StorageSystemTest, StorageErrorHandling_CorruptedData_HandlesGracefully) 
     WindVane::CalibrationData loadedData;
     bool loadResult = storage.LoadCalibration(loadedData);
     EXPECT_FALSE(loadResult);
+}
+
+TEST_F(StorageSystemTest, StorageErrorHandling_InvalidSettingsFile_HandlesGracefully) {
+    WindVane::FileSettingsStorage storage("nonexistent_settings.dat");
     
-    // Clean up test file
-    std::remove("corrupted_file.dat");
+    // Try to load from non-existent file
+    WindVane::SettingsData loadedData;
+    bool loadResult = storage.LoadSettings(loadedData);
+    EXPECT_FALSE(loadResult);
+}
+
+TEST_F(StorageSystemTest, StorageErrorHandling_CorruptedSettingsFile_HandlesGracefully) {
+    WindVane::FileSettingsStorage storage("corrupted_settings.dat");
+    
+    // Create a corrupted file
+    std::ofstream file("corrupted_settings.dat", std::ios::binary);
+    file.write("corrupted settings", 18);
+    file.close();
+    
+    // Try to load corrupted data
+    WindVane::SettingsData loadedData;
+    bool loadResult = storage.LoadSettings(loadedData);
+    EXPECT_FALSE(loadResult);
 }
 
 int main(int argc, char** argv) {
