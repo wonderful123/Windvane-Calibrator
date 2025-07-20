@@ -5,9 +5,9 @@
 #include "SettingsMenu.h"
 #include "WindVaneCompass.h"
 #include "MenuDisplayController.h"
-#include <Calibration/CalibrationResult.h>
-#include <Platform/IPlatform.h>
-#include <Storage/StorageResult.h>
+#include "WindVane/Calibration/CalibrationResult.h"
+#include "WindVane/Platform/IPlatform.h"
+#include "WindVane/Storage/StorageResult.h"
 #include <cstdio>
 #include <limits>
 

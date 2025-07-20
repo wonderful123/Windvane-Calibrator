@@ -29,12 +29,16 @@
 #include "WindVane/Storage/EEPROMCalibrationStorage.h"
 #include "WindVane/Storage/FileCalibrationStorage.h"
 #include "WindVane/Storage/IStorage.h"
+#include "WindVane/Storage/SettingsManager.h"
 
 // UI components
 #include "WindVane/UI/IInputOutput.h"
 #include "WindVane/UI/SerialIOHandler.h"
 #include "WindVane/UI/ConsoleIOHandler.h"
 #include "WindVane/UI/IOFactory.h"
+#include "WindVane/UI/IIO.h"
+#include "WindVane/UI/SerialOutput.h"
+#include "WindVane/UI/ConsoleOutput.h"
 
 // Menu components
 #include "WindVane/Menu/WindVaneMenu.h"
@@ -49,6 +53,20 @@
 #include "WindVane/Platform/IPlatform.h"
 #include "WindVane/Platform/Platform.h"
 #include "WindVane/Platform/TimeUtils.h"
+
+// Interface components
+#include "WindVane/Interfaces/IDiagnostics.h"
+#include "WindVane/Interfaces/IUserIO.h"
+#include "WindVane/Interfaces/ICalibrationStorage.h"
+#include "WindVane/Interfaces/IADC.h"
+#include "WindVane/Interfaces/IAnalogDigitalConverter.h"
+#include "WindVane/Interfaces/BufferedDiagnostics.h"
+#include "WindVane/Interfaces/BasicDiagnostics.h"
+#include "WindVane/Interfaces/ConsoleDiagnostics.h"
+#include "WindVane/Interfaces/DiagnosticsBus.h"
+#include "WindVane/Interfaces/DiagnosticsEvent.h"
+#include "WindVane/Interfaces/IDiagnosticsSink.h"
+#include "WindVane/Interfaces/SerialDiagnostics.h"
 
 /**
  * @namespace WindVane
