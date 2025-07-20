@@ -94,6 +94,12 @@ float ClusterManager::interpolate(float reading) const {
         return normalize360(reading * 360.0f);
 
     size_t n = _clusters.size();
+    
+    // Additional safety check - should never happen but prevents crashes
+    if (n == 0) {
+        return normalize360(reading * 360.0f);
+    }
+    
     // handle wrap-around before first cluster
     if (reading < _clusters.front().mean) {
         // Handle wrap-around case: reading is between last cluster (wrapped) and first cluster

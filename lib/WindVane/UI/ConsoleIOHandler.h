@@ -31,16 +31,26 @@ public:
     }
 
     float readFloat() const override {
-        float v;
-        std::cin >> v;
-        flushInput();
+        float v = 0.0f;
+        if (std::cin >> v) {
+            flushInput();
+        } else {
+            // Clear error state and flush input
+            std::cin.clear();
+            flushInput();
+        }
         return v;
     }
 
     int readInt() const override {
-        int v;
-        std::cin >> v;
-        flushInput();
+        int v = 0;
+        if (std::cin >> v) {
+            flushInput();
+        } else {
+            // Clear error state and flush input
+            std::cin.clear();
+            flushInput();
+        }
         return v;
     }
 };
