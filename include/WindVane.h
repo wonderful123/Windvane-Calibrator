@@ -14,6 +14,42 @@
 #include "WindVane/Builder.h"
 #include "WindVane/Platform.h"
 
+// Core components
+#include "WindVane/Core/WindVane.h"
+
+// Calibration components
+#include "WindVane/Calibration/CalibrationManager.h"
+#include "WindVane/Calibration/ClusterManager.h"
+#include "WindVane/Calibration/ICalibrationStrategy.h"
+#include "WindVane/Calibration/SpinningMethod.h"
+#include "WindVane/Calibration/StrategyFactory.h"
+
+// Storage components
+#include "WindVane/Storage/ICalibrationStorage.h"
+#include "WindVane/Storage/EEPROMCalibrationStorage.h"
+#include "WindVane/Storage/FileCalibrationStorage.h"
+#include "WindVane/Storage/IStorage.h"
+
+// UI components
+#include "WindVane/UI/IInputOutput.h"
+#include "WindVane/UI/SerialIOHandler.h"
+#include "WindVane/UI/ConsoleIOHandler.h"
+#include "WindVane/UI/IOFactory.h"
+
+// Menu components
+#include "WindVane/Menu/WindVaneMenu.h"
+#include "WindVane/Menu/MenuController.h"
+#include "WindVane/Menu/SettingsMenu.h"
+#include "WindVane/Menu/DiagnosticsMenu.h"
+
+// Driver components
+#include "WindVane/Drivers/ADC.h"
+
+// Platform components
+#include "WindVane/Platform/IPlatform.h"
+#include "WindVane/Platform/Platform.h"
+#include "WindVane/Platform/TimeUtils.h"
+
 /**
  * @namespace WindVane
  * @brief Main namespace for the WindVane library

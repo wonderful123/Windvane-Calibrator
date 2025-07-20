@@ -27,6 +27,7 @@
   "examples": [
     "examples/BasicWindVane",
     "examples/AdvancedCalibration",
+    "examples/CompleteWindVaneSystem",
     "examples/HostSimulation"
   ]
 }

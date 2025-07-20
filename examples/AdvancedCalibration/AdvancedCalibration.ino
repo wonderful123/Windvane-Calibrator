@@ -3,7 +3,8 @@
  * @brief Advanced calibration example for the WindVane library
  * 
  * This example demonstrates advanced calibration features including
- * multiple calibration methods, data validation, and storage management.
+ * multiple calibration methods, data validation, storage management,
+ * and the complete menu system.
  */
 
 #include <WindVane.h>
@@ -12,16 +13,16 @@
 WindVane::WindVaneBuilder builder = WindVane::WindVaneBuilder::esp32();
 std::unique_ptr<WindVane::WindVane> windVane;
 
-// Calibration state
-enum class CalibrationState {
-  IDLE,
-  SPINNING,
-  STATIC,
-  MANUAL,
-  VALIDATING
-};
+// Menu system components
+std::unique_ptr<WindVane::IUserIO> userIO;
+std::unique_ptr<WindVane::IOutput> output;
+std::unique_ptr<WindVane::IDiagnostics> diagnostics;
+std::unique_ptr<WindVane::ICalibrationStorage> storage;
+std::unique_ptr<WindVane::IPlatform> platform;
+std::unique_ptr<WindVane::SettingsManager> settingsManager;
 
-CalibrationState currentState = CalibrationState::IDLE;
+// Menu system
+std::unique_ptr<WindVane::WindVaneMenu> menu;
 
 void setup() {
   Serial.begin(115200);
@@ -35,46 +36,97 @@ void setup() {
   
   windVane = builder.build();
   
+  if (!windVane) {
+    Serial.println("Failed to create WindVane instance!");
+    return;
+  }
+  
+  // Initialize WindVane
   if (!windVane->begin()) {
-    Serial.println("Failed to initialize wind vane!");
+    Serial.println("Failed to initialize WindVane!");
     return;
   }
   
   Serial.println("WindVane initialized successfully");
-  printMenu();
+  
+  // Initialize menu system components
+  initializeMenuSystem();
+  
+  // Load existing calibration if available
+  if (windVane->loadCalibration()) {
+    Serial.println("Loaded existing calibration");
+  } else {
+    Serial.println("No calibration found, will need to calibrate");
+  }
+  
+  // Show main menu
+  if (menu) {
+    menu->begin();
+  }
 }
 
 void loop() {
+  // Update the wind vane
   windVane->update();
   
+  // Update the menu system
+  if (menu) {
+    menu->update();
+  }
+  
+  // Handle serial input for direct commands
   if (Serial.available()) {
     char command = Serial.read();
-    handleCommand(command);
-  }
-  
-  // Update calibration status
-  if (windVane->isCalibrating()) {
-    updateCalibrationStatus();
-  }
-  
-  // Print current measurement
-  if (windVane->isCalibrated()) {
-    WindVane::WindMeasurement measurement = windVane->getMeasurement();
-    if (measurement.isValid) {
-      Serial.print("Direction: ");
-      Serial.print(measurement.direction.getDegrees());
-      Serial.print("°, Raw: ");
-      Serial.print(windVane->getRawValue());
-      Serial.print(", Voltage: ");
-      Serial.print(windVane->getVoltage());
-      Serial.println(" mV");
-    }
+    handleDirectCommand(command);
   }
   
   delay(100);
 }
 
-void handleCommand(char command) {
+void initializeMenuSystem() {
+  // Create platform-specific components
+  platform = std::make_unique<WindVane::ArduinoPlatform>();
+  
+  // Create UI components
+  userIO = std::make_unique<WindVane::SerialIOHandler>();
+  output = std::make_unique<WindVane::SerialOutput>();
+  
+  // Create diagnostics
+  diagnostics = std::make_unique<WindVane::BasicDiagnostics>(output.get());
+  
+  // Create storage
+  storage = std::make_unique<WindVane::EEPROMCalibrationStorage>();
+  
+  // Create settings manager
+  auto settingsStorage = std::make_unique<WindVane::EEPROMSettingsStorage>();
+  settingsManager = std::make_unique<WindVane::SettingsManager>(*settingsStorage, *diagnostics);
+  
+  // Initialize components
+  userIO->begin();
+  output->begin();
+  diagnostics->begin();
+  storage->begin();
+  settingsManager->begin();
+  
+  // Create menu configuration
+  WindVane::WindVaneMenuConfig menuConfig{
+    .vane = *windVane,
+    .io = *userIO,
+    .diag = *diagnostics,
+    .bufferedDiag = std::nullopt,
+    .out = *output,
+    .storage = *storage,
+    .settingsMgr = *settingsManager,
+    .platform = *platform
+  };
+  
+  // Create menu system
+  menu = std::make_unique<WindVane::WindVaneMenu>(menuConfig);
+  
+  Serial.println("Menu system initialized");
+}
+
+void handleDirectCommand(char command) {
   switch (command) {
     case '1':
       startSpinningCalibration();
@@ -106,6 +158,10 @@ void handleCommand(char command) {
     case '0':
       printSystemInfo();
       break;
+    case 'm':
+    case 'M':
+      showMenuSystem();
+      break;
     default:
       break;
   }
@@ -116,7 +172,6 @@ void startSpinningCalibration() {
   Serial.println("Please rotate the wind vane 360 degrees slowly and continuously.");
   
   if (windVane->startCalibration(WindVane::CalibrationMethod::SPINNING)) {
-    currentState = CalibrationState::SPINNING;
     Serial.println("Spinning calibration started. Rotate the wind vane now.");
   } else {
     Serial.println("Failed to start spinning calibration!");
@@ -128,7 +183,6 @@ void startStaticCalibration() {
   Serial.println("Please point the wind vane to known directions (0°, 90°, 180°, 270°).");
   
   if (windVane->startCalibration(WindVane::CalibrationMethod::STATIC)) {
-    currentState = CalibrationState::STATIC;
     Serial.println("Static calibration started. Point to known directions.");
   } else {
     Serial.println("Failed to start static calibration!");
@@ -140,46 +194,9 @@ void startManualCalibration() {
   Serial.println("Enter known wind directions when prompted.");
   
   if (windVane->startCalibration(WindVane::CalibrationMethod::MANUAL)) {
-    currentState = CalibrationState::MANUAL;
     Serial.println("Manual calibration started. Follow the prompts.");
   } else {
     Serial.println("Failed to start manual calibration!");
-  }
-}
-
-void updateCalibrationStatus() {
-  uint8_t progress = windVane->getCalibrationProgress();
-  
-  switch (currentState) {
-    case CalibrationState::SPINNING:
-      Serial.print("Spinning calibration progress: ");
-      Serial.print(progress);
-      Serial.println("%");
-      break;
-    case CalibrationState::STATIC:
-      Serial.print("Static calibration progress: ");
-      Serial.print(progress);
-      Serial.println("%");
-      break;
-    case CalibrationState::MANUAL:
-      Serial.print("Manual calibration progress: ");
-      Serial.print(progress);
-      Serial.println("%");
-      break;
-    default:
-      break;
-  }
-  
-  // Check if calibration is complete
-  if (!windVane->isCalibrating()) {
-    if (windVane->stopCalibration()) {
-      Serial.println("Calibration completed successfully!");
-      currentState = CalibrationState::IDLE;
-      printCalibrationData();
-    } else {
-      Serial.println("Calibration failed!");
-      currentState = CalibrationState::IDLE;
-    }
   }
 }
 
@@ -258,6 +275,16 @@ void printSystemInfo() {
   Serial.println(windVane->getConfig().type == WindVane::VaneType::POTENTIOMETER ? "Potentiometer" : "Reed Switch");
 }
 
+void showMenuSystem() {
+  Serial.println("=== Menu System ===");
+  Serial.println("The menu system provides an interactive interface.");
+  Serial.println("Use the menu system for:");
+  Serial.println("- Live wind direction display");
+  Serial.println("- Interactive calibration");
+  Serial.println("- Diagnostics and settings");
+  Serial.println("- Help and documentation");
+}
+
 void printMenu() {
   Serial.println("\n=== WindVane Advanced Calibration Menu ===");
   Serial.println("1. Start Spinning Calibration");
@@ -270,5 +297,6 @@ void printMenu() {
   Serial.println("8. Print Calibration Data");
   Serial.println("9. Show Menu");
   Serial.println("0. System Information");
-  Serial.println("Enter command (1-9, 0):");
+  Serial.println("M. Show Menu System Info");
+  Serial.println("Enter command (1-9, 0, M):");
 }

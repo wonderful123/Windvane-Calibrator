@@ -8,6 +8,7 @@ A self-contained C++ library for wind vane calibration and measurement with supp
 - **Multiple Sensor Types**: Reed switch, potentiometer, magnetic, and optical encoders
 - **Advanced Calibration**: Spinning, static, automatic, and manual calibration methods
 - **Flexible Storage**: EEPROM, Flash, SD card, and file system storage backends
+- **Interactive Menu System**: Complete UI with live display, diagnostics, and settings
 - **SOLID Principles**: Clean architecture with dependency injection and interfaces
 - **Comprehensive Testing**: Unit tests and integration tests
 - **Google C++ Style Guide**: Consistent code formatting and naming conventions
@@ -53,17 +54,21 @@ void loop() {
 }
 ```
 
-### ESP32 Example
+### Complete System Example
+
+For a full-featured system with menu, diagnostics, and all components:
 
 ```cpp
 #include <WindVane.h>
 
-// Configure for ESP32
-WindVane::WindVaneBuilder builder = WindVane::WindVaneBuilder::esp32();
-auto windVane = builder.setVaneType(WindVane::VaneType::POTENTIOMETER)
-                       .setADCConfig(WindVane::ADCConfig(36, 12, 3300, 8, 50))
-                       .setStorageConfig(WindVane::StorageConfig(WindVane::StorageType::FLASH, 0, 2048))
-                       .build();
+// See examples/CompleteWindVaneSystem/CompleteWindVaneSystem.ino
+// for a complete example with all features including:
+// - Interactive menu system
+// - Real-time wind direction display
+// - Multiple calibration methods
+// - Diagnostics and logging
+// - Settings management
+// - Platform abstraction
 ```
 
 ## Installation
@@ -157,6 +162,26 @@ public:
 };
 ```
 
+#### WindVaneMenu
+
+Interactive menu system for user interface.
+
+```cpp
+class WindVaneMenu {
+public:
+    WindVaneMenu(const WindVaneMenuConfig& config);
+    
+    void begin();
+    void update();
+    
+    // Menu features:
+    // - Live wind direction display
+    // - Interactive calibration
+    // - Diagnostics and settings
+    // - Help and documentation
+};
+```
+
 #### WindVaneBuilder
 
 Builder pattern for creating WindVane instances.
@@ -231,10 +256,18 @@ Simple example for reading wind direction.
 
 ### Advanced Calibration
 
-Advanced example with multiple calibration methods.
+Advanced example with multiple calibration methods and menu system.
 
 ```cpp
 // examples/AdvancedCalibration/AdvancedCalibration.ino
+```
+
+### Complete Wind Vane System
+
+Full-featured example with all components including menu system, diagnostics, and settings.
+
+```cpp
+// examples/CompleteWindVaneSystem/CompleteWindVaneSystem.ino
 ```
 
 ### Host Simulation
@@ -253,6 +286,7 @@ Desktop simulation with file-based storage.
 - **Storage**: EEPROM
 - **UI**: Serial communication
 - **Time**: `millis()` function
+- **Menu**: Interactive serial menu
 
 ### ESP32
 
@@ -260,6 +294,7 @@ Desktop simulation with file-based storage.
 - **Storage**: Flash memory or SD card
 - **UI**: Serial communication
 - **Time**: `millis()` function
+- **Menu**: Interactive serial menu
 
 ### Host (Desktop)
 
@@ -267,6 +302,7 @@ Desktop simulation with file-based storage.
 - **Storage**: File system
 - **UI**: Console I/O
 - **Time**: `std::chrono`
+- **Menu**: Console-based menu
 
 ## Architecture
 
@@ -277,6 +313,17 @@ The library follows SOLID principles with clean separation of concerns:
 - **Builder Pattern**: Fluent interface for configuration
 - **Factory Pattern**: Platform-specific implementations
 - **Strategy Pattern**: Different calibration and storage strategies
+- **Menu System**: Interactive UI with state management
+
+## Menu System Features
+
+The WindVane library includes a comprehensive menu system:
+
+- **Live Display**: Real-time wind direction with status
+- **Interactive Calibration**: Guided calibration process
+- **Diagnostics**: System diagnostics and logging
+- **Settings**: Configuration and maintenance
+- **Help**: Documentation and assistance
 
 ## Contributing
 
@@ -296,4 +343,6 @@ MIT License - see LICENSE file for details.
 - Support for Arduino, ESP32, and Host platforms
 - Multiple calibration methods
 - Flexible storage backends
+- Interactive menu system
 - Comprehensive testing framework
+- Complete diagnostics and logging
