@@ -3,104 +3,181 @@
  * @brief Basic example of using the WindVane library
  * 
  * This example demonstrates the basic usage of the WindVane library
- * for reading wind direction and performing calibration.
+ * for reading wind direction and performing simple calibration.
+ * 
+ * Features demonstrated:
+ * - Basic wind direction reading
+ * - Simple calibration process
+ * - Raw sensor value reading
+ * - Basic error handling
+ * 
+ * Hardware Requirements:
+ * - Arduino board (Uno, Mega, etc.)
+ * - Wind vane sensor connected to analog pin
+ * - Serial connection for output
  */
 
 #include <WindVane.h>
 
-// Create a WindVane instance using the builder pattern
-WindVane::WindVaneBuilder builder = WindVane::WindVaneBuilder::arduino();
+// Create components
+std::unique_ptr<WindVane::ADC> adc;
+std::unique_ptr<WindVane::EEPROMCalibrationStorage> storage;
+std::unique_ptr<WindVane::SerialIOHandler> userIO;
+std::unique_ptr<WindVane::SerialDiagnostics> diagnostics;
 std::unique_ptr<WindVane::WindVane> windVane;
 
 void setup() {
   // Initialize serial communication
   Serial.begin(115200);
-  Serial.println("WindVane Basic Example");
+  while (!Serial) {
+    delay(10);
+  }
   
-  // Configure the wind vane
-  builder.setVaneType(WindVane::VaneType::REED_SWITCH)
-         .setCalibrationMethod(WindVane::CalibrationMethod::SPINNING)
-         .setADCConfig(WindVane::ADCConfig(0, 12, 3300, 1, 100));
+  Serial.println("=== WindVane Basic Example ===");
+  Serial.println("Initializing components...");
   
-  // Build the wind vane instance
-  windVane = builder.build();
+  // Create ADC component
+  adc = std::make_unique<WindVane::ADC>();
+  adc->setPin(A0);  // Connect wind vane to A0
+  adc->setResolution(10);  // 10-bit ADC for Arduino
+  adc->setReferenceVoltage(5000);  // 5V reference
   
-  // Initialize the wind vane
-  if (!windVane->begin()) {
-    Serial.println("Failed to initialize wind vane!");
+  if (!adc->begin()) {
+    Serial.println("ERROR: Failed to initialize ADC!");
     return;
   }
+  Serial.println("✓ ADC initialized");
   
-  Serial.println("WindVane initialized successfully");
+  // Create storage component
+  storage = std::make_unique<WindVane::EEPROMCalibrationStorage>();
+  Serial.println("✓ Storage initialized");
   
-  // Load existing calibration if available
-  if (windVane->loadCalibration()) {
-    Serial.println("Loaded existing calibration");
+  // Create user interface
+  userIO = std::make_unique<WindVane::SerialIOHandler>();
+  Serial.println("✓ User interface initialized");
+  
+  // Create diagnostics
+  diagnostics = std::make_unique<WindVane::SerialDiagnostics>();
+  Serial.println("✓ Diagnostics initialized");
+  
+  // Create WindVane configuration
+  WindVane::WindVaneConfig config{
+    *adc,
+    WindVane::WindVaneType::REED_SWITCH,
+    WindVane::CalibrationMethod::SPINNING,
+    storage.get(),
+    *userIO,
+    *diagnostics,
+    WindVane::CalibrationConfig{}
+  };
+  
+  // Create WindVane instance
+  windVane = std::make_unique<WindVane::WindVane>(config);
+  Serial.println("✓ WindVane created");
+  
+  // Check if calibration exists
+  if (windVane->getCalibrationStatus() == WindVane::CalibrationManager::CalibrationStatus::CALIBRATED) {
+    Serial.println("✓ Found existing calibration");
   } else {
-    Serial.println("No calibration found, will need to calibrate");
+    Serial.println("⚠ No calibration found - will need to calibrate");
   }
+  
+  Serial.println("=== Setup Complete ===");
+  Serial.println();
 }
 
 void loop() {
-  // Update the wind vane (call this regularly)
-  windVane->update();
+  // Read wind direction
+  float direction = windVane->getDirection();
+  float rawValue = windVane->getRawDirection();
+  
+  // Get calibration status
+  auto status = windVane->getCalibrationStatus();
+  
+  // Display current readings
+  Serial.println("=== Current Readings ===");
+  Serial.print("Wind Direction: ");
+  Serial.print(direction, 1);
+  Serial.println("°");
+  
+  Serial.print("Raw Sensor Value: ");
+  Serial.print(rawValue, 3);
+  Serial.println(" (0.0-1.0)");
+  
+  Serial.print("Calibration Status: ");
+  switch (status) {
+    case WindVane::CalibrationManager::CalibrationStatus::NOT_CALIBRATED:
+      Serial.println("Not Calibrated");
+      break;
+    case WindVane::CalibrationManager::CalibrationStatus::IN_PROGRESS:
+      Serial.println("Calibration In Progress");
+      break;
+    case WindVane::CalibrationManager::CalibrationStatus::CALIBRATED:
+      Serial.println("Calibrated");
+      break;
+  }
   
   // Check if calibration is needed
-  if (!windVane->isCalibrated()) {
-    Serial.println("Wind vane needs calibration!");
-    Serial.println("Starting calibration...");
+  if (status == WindVane::CalibrationManager::CalibrationStatus::NOT_CALIBRATED) {
+    Serial.println();
+    Serial.println("=== Calibration Required ===");
+    Serial.println("Starting automatic calibration...");
     
-    if (windVane->startCalibration()) {
-      Serial.println("Calibration started. Please rotate the wind vane 360 degrees.");
+    // Start calibration
+    auto result = windVane->runCalibration();
+    if (result.success) {
+      Serial.println("✓ Calibration started successfully");
+      Serial.println("Please rotate the wind vane 360 degrees slowly");
       
-      // Wait for calibration to complete
-      while (windVane->isCalibrating()) {
-        windVane->update();
-        
-        uint8_t progress = windVane->getCalibrationProgress();
-        Serial.print("Calibration progress: ");
-        Serial.print(progress);
-        Serial.println("%");
-        
+      // Monitor calibration progress
+      while (windVane->getCalibrationStatus() == WindVane::CalibrationManager::CalibrationStatus::IN_PROGRESS) {
         delay(100);
+        
+        // Get progress from calibration manager
+        auto calManager = windVane->getCalibrationManager();
+        if (calManager) {
+          float progress = calManager->GetProgress();
+          Serial.print("Calibration Progress: ");
+          Serial.print(progress * 100, 1);
+          Serial.println("%");
+        }
       }
       
-      if (windVane->stopCalibration()) {
-        Serial.println("Calibration completed successfully!");
-        windVane->saveCalibration();
+      // Check final result
+      if (windVane->getCalibrationStatus() == WindVane::CalibrationManager::CalibrationStatus::CALIBRATED) {
+        Serial.println("✓ Calibration completed successfully!");
       } else {
-        Serial.println("Calibration failed!");
+        Serial.println("✗ Calibration failed!");
       }
     } else {
-      Serial.println("Failed to start calibration!");
+      Serial.println("✗ Failed to start calibration: " + result.message);
     }
   }
   
-  // Get current wind direction
-  WindVane::WindDirection direction = windVane->getDirection();
-  uint16_t rawValue = windVane->getRawValue();
-  uint16_t voltage = windVane->getVoltage();
+  // Display additional sensor information
+  Serial.println();
+  Serial.println("=== Sensor Information ===");
+  Serial.print("ADC Resolution: ");
+  Serial.print(adc->getResolution());
+  Serial.println(" bits");
   
-  // Print wind information
-  Serial.print("Wind Direction: ");
-  Serial.print(direction.getDegrees());
-  Serial.print("° (Raw: ");
-  Serial.print(rawValue);
-  Serial.print(", Voltage: ");
-  Serial.print(voltage);
-  Serial.println(" mV)");
+  Serial.print("Reference Voltage: ");
+  Serial.print(adc->getReferenceVoltage());
+  Serial.println(" mV");
   
-  // Get complete measurement
-  WindVane::WindMeasurement measurement = windVane->getMeasurement();
-  if (measurement.isValid) {
-    Serial.print("Measurement - Direction: ");
-    Serial.print(measurement.direction.getDegrees());
-    Serial.print("°, Speed: ");
-    Serial.print(measurement.speed.getMPS());
-    Serial.print(" m/s, Time: ");
-    Serial.print(measurement.timestamp.count());
-    Serial.println(" ms");
-  }
+  Serial.print("Current Voltage: ");
+  Serial.print(adc->readVoltage());
+  Serial.println(" mV");
   
-  delay(1000);
+  Serial.print("ADC Raw Value: ");
+  Serial.println(adc->read());
+  
+  Serial.print("Normalized Value: ");
+  Serial.println(adc->readNormalized(), 3);
+  
+  Serial.println();
+  Serial.println("=== End of Loop ===");
+  Serial.println();
+  
+  delay(2000);  // Update every 2 seconds
 }

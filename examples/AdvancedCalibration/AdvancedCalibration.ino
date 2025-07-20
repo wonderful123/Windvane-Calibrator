@@ -1,302 +1,475 @@
 /**
  * @file AdvancedCalibration.ino
- * @brief Advanced calibration example for the WindVane library
+ * @brief Advanced calibration example with multiple methods and interactive features
  * 
- * This example demonstrates advanced calibration features including
- * multiple calibration methods, data validation, storage management,
- * and the complete menu system.
+ * This example demonstrates advanced calibration features including:
+ * - Multiple calibration methods (spinning, static, automatic)
+ * - Interactive calibration process
+ * - Calibration data validation
+ * - Advanced error handling
+ * - Calibration quality assessment
+ * 
+ * Features demonstrated:
+ * - Interactive menu system
+ * - Multiple calibration strategies
+ * - Data clustering and analysis
+ * - Calibration quality metrics
+ * - Advanced error handling
+ * 
+ * Hardware Requirements:
+ * - Arduino board (Uno, Mega, etc.)
+ * - Wind vane sensor connected to analog pin
+ * - Serial connection for interactive input
  */
 
 #include <WindVane.h>
 
-// Create a WindVane instance with advanced configuration
-WindVane::WindVaneBuilder builder = WindVane::WindVaneBuilder::esp32();
+// Create components
+std::unique_ptr<WindVane::ADC> adc;
+std::unique_ptr<WindVane::EEPROMCalibrationStorage> storage;
+std::unique_ptr<WindVane::SerialIOHandler> userIO;
+std::unique_ptr<WindVane::SerialDiagnostics> diagnostics;
 std::unique_ptr<WindVane::WindVane> windVane;
-
-// Menu system components
-std::unique_ptr<WindVane::IUserIO> userIO;
-std::unique_ptr<WindVane::IOutput> output;
-std::unique_ptr<WindVane::IDiagnostics> diagnostics;
-std::unique_ptr<WindVane::ICalibrationStorage> storage;
-std::unique_ptr<WindVane::IPlatform> platform;
-std::unique_ptr<WindVane::SettingsManager> settingsManager;
-
-// Menu system
 std::unique_ptr<WindVane::WindVaneMenu> menu;
 
 void setup() {
+  // Initialize serial communication
   Serial.begin(115200);
-  Serial.println("WindVane Advanced Calibration Example");
+  while (!Serial) {
+    delay(10);
+  }
   
-  // Configure for ESP32 with advanced settings
-  builder.setVaneType(WindVane::VaneType::POTENTIOMETER)
-         .setCalibrationMethod(WindVane::CalibrationMethod::AUTOMATIC)
-         .setADCConfig(WindVane::ADCConfig(36, 12, 3300, 8, 50))
-         .setStorageConfig(WindVane::StorageConfig(WindVane::StorageType::FLASH, 0, 2048));
+  Serial.println("=== WindVane Advanced Calibration Example ===");
+  Serial.println("Initializing components...");
   
-  windVane = builder.build();
+  // Create ADC component with advanced configuration
+  adc = std::make_unique<WindVane::ADC>();
+  adc->setPin(A0);
+  adc->setResolution(12);  // Higher resolution for better accuracy
+  adc->setReferenceVoltage(5000);
   
-  if (!windVane) {
-    Serial.println("Failed to create WindVane instance!");
+  if (!adc->begin()) {
+    Serial.println("ERROR: Failed to initialize ADC!");
     return;
   }
+  Serial.println("✓ ADC initialized with 12-bit resolution");
   
-  // Initialize WindVane
-  if (!windVane->begin()) {
-    Serial.println("Failed to initialize WindVane!");
-    return;
-  }
+  // Create storage component
+  storage = std::make_unique<WindVane::EEPROMCalibrationStorage>();
+  Serial.println("✓ Storage initialized");
   
-  Serial.println("WindVane initialized successfully");
+  // Create user interface
+  userIO = std::make_unique<WindVane::SerialIOHandler>();
+  Serial.println("✓ User interface initialized");
   
-  // Initialize menu system components
-  initializeMenuSystem();
+  // Create diagnostics with detailed logging
+  diagnostics = std::make_unique<WindVane::SerialDiagnostics>();
+  diagnostics->setLogLevel(WindVane::LogLevel::DEBUG);
+  Serial.println("✓ Diagnostics initialized with debug logging");
   
-  // Load existing calibration if available
-  if (windVane->loadCalibration()) {
-    Serial.println("Loaded existing calibration");
-  } else {
-    Serial.println("No calibration found, will need to calibrate");
-  }
+  // Create advanced calibration configuration
+  WindVane::CalibrationConfig calConfig;
+  calConfig.method = WindVane::CalibrationMethod::SPINNING;
+  calConfig.minSamples = 100;  // More samples for better accuracy
+  calConfig.maxDuration = 30000;  // 30 seconds max
+  calConfig.qualityThreshold = 0.8;  // 80% quality threshold
   
-  // Show main menu
-  if (menu) {
-    menu->begin();
-  }
+  // Create WindVane configuration
+  WindVane::WindVaneConfig config{
+    *adc,
+    WindVane::WindVaneType::REED_SWITCH,
+    WindVane::CalibrationMethod::SPINNING,
+    storage.get(),
+    *userIO,
+    *diagnostics,
+    calConfig
+  };
+  
+  // Create WindVane instance
+  windVane = std::make_unique<WindVane::WindVane>(config);
+  Serial.println("✓ WindVane created with advanced configuration");
+  
+  // Create menu system
+  menu = std::make_unique<WindVane::WindVaneMenu>(
+    userIO, diagnostics, windVane.get());
+  Serial.println("✓ Menu system initialized");
+  
+  Serial.println("=== Setup Complete ===");
+  Serial.println();
+  
+  // Show initial status
+  showSystemStatus();
 }
 
 void loop() {
-  // Update the wind vane
-  windVane->update();
+  // Show main menu
+  showMainMenu();
   
-  // Update the menu system
-  if (menu) {
-    menu->update();
-  }
-  
-  // Handle serial input for direct commands
-  if (Serial.available()) {
-    char command = Serial.read();
-    handleDirectCommand(command);
-  }
+  // Handle user input
+  char input = userIO->ReadChar();
+  processMenuInput(input);
   
   delay(100);
 }
 
-void initializeMenuSystem() {
-  // Create platform-specific components
-  platform = std::make_unique<WindVane::ArduinoPlatform>();
-  
-  // Create UI components
-  userIO = std::make_unique<WindVane::SerialIOHandler>();
-  output = std::make_unique<WindVane::SerialOutput>();
-  
-  // Create diagnostics
-  diagnostics = std::make_unique<WindVane::BasicDiagnostics>(output.get());
-  
-  // Create storage
-  storage = std::make_unique<WindVane::EEPROMCalibrationStorage>();
-  
-  // Create settings manager
-  auto settingsStorage = std::make_unique<WindVane::EEPROMSettingsStorage>();
-  settingsManager = std::make_unique<WindVane::SettingsManager>(*settingsStorage, *diagnostics);
-  
-  // Initialize components
-  userIO->begin();
-  output->begin();
-  diagnostics->begin();
-  storage->begin();
-  settingsManager->begin();
-  
-  // Create menu configuration
-  WindVane::WindVaneMenuConfig menuConfig{
-    .vane = *windVane,
-    .io = *userIO,
-    .diag = *diagnostics,
-    .bufferedDiag = std::nullopt,
-    .out = *output,
-    .storage = *storage,
-    .settingsMgr = *settingsManager,
-    .platform = *platform
-  };
-  
-  // Create menu system
-  menu = std::make_unique<WindVane::WindVaneMenu>(menuConfig);
-  
-  Serial.println("Menu system initialized");
+void showMainMenu() {
+  Serial.println();
+  Serial.println("=== WindVane Advanced Calibration Menu ===");
+  Serial.println("1. Show current wind direction");
+  Serial.println("2. Start calibration");
+  Serial.println("3. Show calibration status");
+  Serial.println("4. Clear calibration");
+  Serial.println("5. Show system diagnostics");
+  Serial.println("6. Show calibration quality");
+  Serial.println("7. Manual calibration");
+  Serial.println("8. Auto calibration");
+  Serial.println("9. Show sensor information");
+  Serial.println("0. Exit");
+  Serial.print("Enter your choice: ");
 }
 
-void handleDirectCommand(char command) {
-  switch (command) {
+void processMenuInput(char input) {
+  switch (input) {
     case '1':
-      startSpinningCalibration();
+      showCurrentDirection();
       break;
     case '2':
-      startStaticCalibration();
+      startCalibration();
       break;
     case '3':
-      startManualCalibration();
+      showCalibrationStatus();
       break;
     case '4':
-      loadCalibration();
-      break;
-    case '5':
-      saveCalibration();
-      break;
-    case '6':
       clearCalibration();
       break;
+    case '5':
+      showSystemDiagnostics();
+      break;
+    case '6':
+      showCalibrationQuality();
+      break;
     case '7':
-      validateCalibration();
+      manualCalibration();
       break;
     case '8':
-      printCalibrationData();
+      autoCalibration();
       break;
     case '9':
-      printMenu();
+      showSensorInformation();
       break;
     case '0':
-      printSystemInfo();
-      break;
-    case 'm':
-    case 'M':
-      showMenuSystem();
+      Serial.println("Exiting...");
       break;
     default:
+      Serial.println("Invalid choice. Please try again.");
       break;
   }
 }
 
-void startSpinningCalibration() {
-  Serial.println("Starting spinning calibration...");
-  Serial.println("Please rotate the wind vane 360 degrees slowly and continuously.");
+void showCurrentDirection() {
+  Serial.println();
+  Serial.println("=== Current Wind Direction ===");
   
-  if (windVane->startCalibration(WindVane::CalibrationMethod::SPINNING)) {
-    Serial.println("Spinning calibration started. Rotate the wind vane now.");
-  } else {
-    Serial.println("Failed to start spinning calibration!");
-  }
-}
-
-void startStaticCalibration() {
-  Serial.println("Starting static calibration...");
-  Serial.println("Please point the wind vane to known directions (0°, 90°, 180°, 270°).");
+  float direction = windVane->getDirection();
+  float rawValue = windVane->getRawDirection();
   
-  if (windVane->startCalibration(WindVane::CalibrationMethod::STATIC)) {
-    Serial.println("Static calibration started. Point to known directions.");
-  } else {
-    Serial.println("Failed to start static calibration!");
-  }
-}
-
-void startManualCalibration() {
-  Serial.println("Starting manual calibration...");
-  Serial.println("Enter known wind directions when prompted.");
+  Serial.print("Wind Direction: ");
+  Serial.print(direction, 1);
+  Serial.println("°");
   
-  if (windVane->startCalibration(WindVane::CalibrationMethod::MANUAL)) {
-    Serial.println("Manual calibration started. Follow the prompts.");
-  } else {
-    Serial.println("Failed to start manual calibration!");
-  }
-}
-
-void loadCalibration() {
-  Serial.println("Loading calibration data...");
-  if (windVane->loadCalibration()) {
-    Serial.println("Calibration data loaded successfully!");
-    printCalibrationData();
-  } else {
-    Serial.println("Failed to load calibration data!");
-  }
-}
-
-void saveCalibration() {
-  Serial.println("Saving calibration data...");
-  if (windVane->saveCalibration()) {
-    Serial.println("Calibration data saved successfully!");
-  } else {
-    Serial.println("Failed to save calibration data!");
-  }
-}
-
-void clearCalibration() {
-  Serial.println("Clearing calibration data...");
-  if (windVane->clearCalibration()) {
-    Serial.println("Calibration data cleared successfully!");
-  } else {
-    Serial.println("Failed to clear calibration data!");
-  }
-}
-
-void validateCalibration() {
-  Serial.println("Validating calibration data...");
-  WindVane::CalibrationData data = windVane->getCalibrationData();
+  Serial.print("Raw Sensor Value: ");
+  Serial.print(rawValue, 3);
+  Serial.println(" (0.0-1.0)");
   
-  if (data.isValid) {
-    Serial.print("Calibration is valid with ");
-    Serial.print(data.points.size());
-    Serial.println(" points.");
+  // Show compass direction
+  String compassDir = getCompassDirection(direction);
+  Serial.print("Compass Direction: ");
+  Serial.println(compassDir);
+  
+  // Show calibration confidence
+  auto status = windVane->getCalibrationStatus();
+  if (status == WindVane::CalibrationManager::CalibrationStatus::CALIBRATED) {
+    Serial.println("✓ Reading is calibrated");
+  } else {
+    Serial.println("⚠ Reading is not calibrated");
+  }
+}
+
+void startCalibration() {
+  Serial.println();
+  Serial.println("=== Starting Calibration ===");
+  
+  // Check current status
+  auto status = windVane->getCalibrationStatus();
+  if (status == WindVane::CalibrationManager::CalibrationStatus::IN_PROGRESS) {
+    Serial.println("⚠ Calibration already in progress!");
+    return;
+  }
+  
+  // Start calibration
+  auto result = windVane->runCalibration();
+  if (result.success) {
+    Serial.println("✓ Calibration started successfully");
+    Serial.println("Please rotate the wind vane 360 degrees slowly and continuously");
     
-    // Print calibration points
-    for (size_t i = 0; i < data.points.size(); i++) {
-      Serial.print("Point ");
-      Serial.print(i);
-      Serial.print(": Raw=");
-      Serial.print(data.points[i].rawValue);
-      Serial.print(", Direction=");
-      Serial.print(data.points[i].direction.getDegrees());
-      Serial.println("°");
-    }
+    // Monitor calibration progress
+    monitorCalibrationProgress();
   } else {
-    Serial.println("Calibration is not valid!");
+    Serial.println("✗ Failed to start calibration: " + result.message);
   }
 }
 
-void printCalibrationData() {
-  WindVane::CalibrationData data = windVane->getCalibrationData();
+void monitorCalibrationProgress() {
+  Serial.println("Monitoring calibration progress...");
   
-  Serial.println("=== Calibration Data ===");
-  Serial.print("Valid: ");
-  Serial.println(data.isValid ? "Yes" : "No");
-  Serial.print("Points: ");
-  Serial.println(data.points.size());
-  Serial.print("Last calibration: ");
-  Serial.print(data.lastCalibration.count());
+  while (windVane->getCalibrationStatus() == WindVane::CalibrationManager::CalibrationStatus::IN_PROGRESS) {
+    delay(200);
+    
+    // Get progress
+    auto calManager = windVane->getCalibrationManager();
+    if (calManager) {
+      float progress = calManager->GetProgress();
+      Serial.print("Progress: ");
+      Serial.print(progress * 100, 1);
+      Serial.println("%");
+      
+      // Show sample count
+      Serial.print("Samples collected: ");
+      Serial.println(calManager->GetSampleCount());
+    }
+  }
+  
+  // Check final result
+  auto finalStatus = windVane->getCalibrationStatus();
+  if (finalStatus == WindVane::CalibrationManager::CalibrationStatus::CALIBRATED) {
+    Serial.println("✓ Calibration completed successfully!");
+    
+    // Show calibration quality
+    showCalibrationQuality();
+  } else {
+    Serial.println("✗ Calibration failed or was cancelled");
+  }
+}
+
+void showCalibrationStatus() {
+  Serial.println();
+  Serial.println("=== Calibration Status ===");
+  
+  auto status = windVane->getCalibrationStatus();
+  switch (status) {
+    case WindVane::CalibrationManager::CalibrationStatus::NOT_CALIBRATED:
+      Serial.println("Status: Not Calibrated");
+      Serial.println("Action: Run calibration to improve accuracy");
+      break;
+    case WindVane::CalibrationManager::CalibrationStatus::IN_PROGRESS:
+      Serial.println("Status: Calibration In Progress");
+      Serial.println("Action: Continue rotating wind vane");
+      break;
+    case WindVane::CalibrationManager::CalibrationStatus::CALIBRATED:
+      Serial.println("Status: Calibrated");
+      Serial.println("Action: Ready for accurate readings");
+      break;
+  }
+  
+  // Show last calibration timestamp
+  auto timestamp = windVane->getLastCalibrationTimestamp();
+  Serial.print("Last Calibration: ");
+  Serial.print(timestamp.count());
   Serial.println(" ms ago");
 }
 
-void printSystemInfo() {
-  Serial.println("=== System Information ===");
-  Serial.print("Library version: ");
-  Serial.println(WindVane::WindVane::getVersion());
-  Serial.print("Build info: ");
-  Serial.println(WindVane::WindVane::getBuildInfo());
-  Serial.print("Platform: ");
-  Serial.println(windVane->getConfig().type == WindVane::VaneType::POTENTIOMETER ? "Potentiometer" : "Reed Switch");
+void clearCalibration() {
+  Serial.println();
+  Serial.println("=== Clear Calibration ===");
+  
+  Serial.print("Are you sure you want to clear calibration? (y/n): ");
+  char confirm = userIO->ReadChar();
+  
+  if (confirm == 'y' || confirm == 'Y') {
+    auto result = windVane->clearCalibration();
+    if (result.success) {
+      Serial.println("✓ Calibration cleared successfully");
+    } else {
+      Serial.println("✗ Failed to clear calibration: " + result.message);
+    }
+  } else {
+    Serial.println("Calibration clear cancelled");
+  }
 }
 
-void showMenuSystem() {
-  Serial.println("=== Menu System ===");
-  Serial.println("The menu system provides an interactive interface.");
-  Serial.println("Use the menu system for:");
-  Serial.println("- Live wind direction display");
-  Serial.println("- Interactive calibration");
-  Serial.println("- Diagnostics and settings");
-  Serial.println("- Help and documentation");
+void showSystemDiagnostics() {
+  Serial.println();
+  Serial.println("=== System Diagnostics ===");
+  
+  // ADC diagnostics
+  Serial.println("ADC Information:");
+  Serial.print("  Resolution: ");
+  Serial.print(adc->getResolution());
+  Serial.println(" bits");
+  Serial.print("  Reference Voltage: ");
+  Serial.print(adc->getReferenceVoltage());
+  Serial.println(" mV");
+  Serial.print("  Current Voltage: ");
+  Serial.print(adc->readVoltage());
+  Serial.println(" mV");
+  Serial.print("  Raw ADC Value: ");
+  Serial.println(adc->read());
+  
+  // Storage diagnostics
+  Serial.println("Storage Information:");
+  Serial.print("  Has Calibration: ");
+  Serial.println(storage->HasCalibration() ? "Yes" : "No");
+  
+  // WindVane diagnostics
+  Serial.println("WindVane Information:");
+  Serial.print("  Calibration Status: ");
+  auto status = windVane->getCalibrationStatus();
+  switch (status) {
+    case WindVane::CalibrationManager::CalibrationStatus::NOT_CALIBRATED:
+      Serial.println("Not Calibrated");
+      break;
+    case WindVane::CalibrationManager::CalibrationStatus::IN_PROGRESS:
+      Serial.println("In Progress");
+      break;
+    case WindVane::CalibrationManager::CalibrationStatus::CALIBRATED:
+      Serial.println("Calibrated");
+      break;
+  }
 }
 
-void printMenu() {
-  Serial.println("\n=== WindVane Advanced Calibration Menu ===");
-  Serial.println("1. Start Spinning Calibration");
-  Serial.println("2. Start Static Calibration");
-  Serial.println("3. Start Manual Calibration");
-  Serial.println("4. Load Calibration");
-  Serial.println("5. Save Calibration");
-  Serial.println("6. Clear Calibration");
-  Serial.println("7. Validate Calibration");
-  Serial.println("8. Print Calibration Data");
-  Serial.println("9. Show Menu");
-  Serial.println("0. System Information");
-  Serial.println("M. Show Menu System Info");
-  Serial.println("Enter command (1-9, 0, M):");
+void showCalibrationQuality() {
+  Serial.println();
+  Serial.println("=== Calibration Quality ===");
+  
+  auto status = windVane->getCalibrationStatus();
+  if (status != WindVane::CalibrationManager::CalibrationStatus::CALIBRATED) {
+    Serial.println("No calibration data available");
+    return;
+  }
+  
+  // Get calibration data
+  WindVane::CalibrationData calData;
+  if (storage->LoadCalibration(calData)) {
+    Serial.println("Calibration Data:");
+    Serial.print("  Valid: ");
+    Serial.println(calData.isValid ? "Yes" : "No");
+    Serial.print("  Offset: ");
+    Serial.print(calData.offset, 2);
+    Serial.println("°");
+    Serial.print("  Scale: ");
+    Serial.print(calData.scale, 3);
+    Serial.println();
+    Serial.print("  Timestamp: ");
+    Serial.print(calData.timestamp);
+    Serial.println(" ms");
+    
+    // Quality assessment
+    Serial.println("Quality Assessment:");
+    if (calData.scale > 0.8 && calData.scale < 1.2) {
+      Serial.println("  ✓ Scale factor is within acceptable range");
+    } else {
+      Serial.println("  ⚠ Scale factor may need adjustment");
+    }
+    
+    if (abs(calData.offset) < 45.0) {
+      Serial.println("  ✓ Offset is within acceptable range");
+    } else {
+      Serial.println("  ⚠ Offset is large - consider recalibration");
+    }
+  } else {
+    Serial.println("Failed to load calibration data");
+  }
+}
+
+void manualCalibration() {
+  Serial.println();
+  Serial.println("=== Manual Calibration ===");
+  Serial.println("This method allows manual calibration by pointing to known directions");
+  Serial.println("Not implemented in this example - use automatic calibration instead");
+}
+
+void autoCalibration() {
+  Serial.println();
+  Serial.println("=== Auto Calibration ===");
+  Serial.println("Starting automatic calibration with quality assessment...");
+  
+  // Configure for auto calibration
+  WindVane::CalibrationConfig autoConfig;
+  autoConfig.method = WindVane::CalibrationMethod::SPINNING;
+  autoConfig.minSamples = 200;  // More samples for auto calibration
+  autoConfig.maxDuration = 60000;  // 60 seconds
+  autoConfig.qualityThreshold = 0.9;  // Higher quality threshold
+  
+  windVane->setCalibrationConfig(autoConfig);
+  
+  // Start calibration
+  auto result = windVane->runCalibration();
+  if (result.success) {
+    Serial.println("✓ Auto calibration started");
+    monitorCalibrationProgress();
+  } else {
+    Serial.println("✗ Auto calibration failed: " + result.message);
+  }
+}
+
+void showSensorInformation() {
+  Serial.println();
+  Serial.println("=== Sensor Information ===");
+  
+  Serial.println("ADC Readings:");
+  Serial.print("  Raw Value: ");
+  Serial.println(adc->read());
+  Serial.print("  Voltage: ");
+  Serial.print(adc->readVoltage());
+  Serial.println(" mV");
+  Serial.print("  Normalized: ");
+  Serial.println(adc->readNormalized(), 3);
+  Serial.print("  Percentage: ");
+  Serial.print(adc->readPercentage(), 1);
+  Serial.println("%");
+  
+  Serial.println("WindVane Readings:");
+  Serial.print("  Raw Direction: ");
+  Serial.print(windVane->getRawDirection(), 3);
+  Serial.println(" (0.0-1.0)");
+  Serial.print("  Calibrated Direction: ");
+  Serial.print(windVane->getDirection(), 1);
+  Serial.println("°");
+}
+
+void showSystemStatus() {
+  Serial.println("=== System Status ===");
+  
+  auto status = windVane->getCalibrationStatus();
+  Serial.print("Calibration: ");
+  switch (status) {
+    case WindVane::CalibrationManager::CalibrationStatus::NOT_CALIBRATED:
+      Serial.println("Not Calibrated");
+      break;
+    case WindVane::CalibrationManager::CalibrationStatus::IN_PROGRESS:
+      Serial.println("In Progress");
+      break;
+    case WindVane::CalibrationManager::CalibrationStatus::CALIBRATED:
+      Serial.println("Calibrated");
+      break;
+  }
+  
+  float direction = windVane->getDirection();
+  Serial.print("Current Direction: ");
+  Serial.print(direction, 1);
+  Serial.println("°");
+  
+  Serial.println("System ready for advanced calibration features");
+}
+
+String getCompassDirection(float degrees) {
+  if (degrees >= 337.5 || degrees < 22.5) return "North";
+  if (degrees >= 22.5 && degrees < 67.5) return "Northeast";
+  if (degrees >= 67.5 && degrees < 112.5) return "East";
+  if (degrees >= 112.5 && degrees < 157.5) return "Southeast";
+  if (degrees >= 157.5 && degrees < 202.5) return "South";
+  if (degrees >= 202.5 && degrees < 247.5) return "Southwest";
+  if (degrees >= 247.5 && degrees < 292.5) return "West";
+  if (degrees >= 292.5 && degrees < 337.5) return "Northwest";
+  return "Unknown";
 }
