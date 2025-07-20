@@ -41,7 +41,15 @@ struct TimeMs {
 inline TimeMs add(TimeMs a, TimeMs b) { return a + b; }
 inline TimeMs elapsed(TimeMs start, TimeMs end) { return end - start; }
 
-TimeMs now();
+#ifdef ARDUINO
+inline TimeMs now() { return TimeMs{::millis()}; }
+#else
+inline TimeMs now() {
+    using namespace std::chrono;
+    static auto start = steady_clock::now();
+    return TimeMs{static_cast<TimeMs::rep>(duration_cast<milliseconds>(steady_clock::now() - start).count())};
+}
+#endif
 
 inline uint32_t toEmbedded(TimeMs t) { return t.count(); }
 inline std::chrono::milliseconds toChrono(TimeMs t) { return std::chrono::milliseconds(t.count()); }
